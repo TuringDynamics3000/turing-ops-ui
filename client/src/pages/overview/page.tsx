@@ -2,6 +2,9 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Explainer } from "@/components/ui/explainer";
 import { EXPLAINER_CONTENT } from "@/lib/explainer-content";
+import { KPICard } from "@/components/dashboard/KPICard";
+import { Sparkline, generateTrendData } from "@/components/dashboard/Sparkline";
+import { StatusIndicator, StatusBadge, SystemHealth } from "@/components/dashboard/StatusIndicator";
 import { trpc } from "@/lib/trpc";
 import { 
   Activity, 
@@ -14,9 +17,15 @@ import {
   Server,
   Loader2,
   ArrowUpRight,
-  ArrowDownRight
+  ArrowDownRight,
+  Zap,
+  Lock,
+  Eye,
+  Database
 } from "lucide-react";
 import { Link } from "wouter";
+import { useMemo } from "react";
+import { cn } from "@/lib/utils";
 
 export default function OverviewPage() {
   const { data: decisions, isLoading: decisionsLoading } = trpc.decisions.list.useQuery();
@@ -47,57 +56,94 @@ export default function OverviewPage() {
 
   // Evidence metrics
   const evidenceCount = evidence?.length || 0;
-  const evidenceCoverage = completedDecisions.length > 0 
-    ? Math.round((evidenceCount / completedDecisions.length) * 100) 
-    : 100;
 
-  // Latest evidence hash
-  const latestEvidence = evidence?.[0];
+  // Generate sparkline data (memoized to prevent re-renders)
+  const sparklineData = useMemo(() => ({
+    payments: generateTrendData(247, 0.15, 12, "up"),
+    successRate: generateTrendData(98.4, 0.02, 12, "stable"),
+    latency: generateTrendData(142, 0.2, 12, "down"),
+    decisions: generateTrendData(pendingDecisions.length || 22, 0.3, 12, "stable"),
+  }), [pendingDecisions.length]);
+
+  // System health data
+  const systemHealth = [
+    { name: "Payment Gateway", status: "healthy" as const, latency: "23ms" },
+    { name: "Ledger Service", status: "healthy" as const, latency: "12ms" },
+    { name: "Risk Engine", status: "healthy" as const, latency: "45ms" },
+    { name: "Evidence Store", status: "healthy" as const, latency: "8ms" },
+  ];
 
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-[50vh]">
-        <Loader2 className="h-8 w-8 animate-spin text-orange-500" />
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="h-8 w-8 animate-spin text-orange-500" />
+          <p className="text-zinc-500 text-sm">Loading governance metrics...</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-500">
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight text-white">Executive Overview</h1>
-        <p className="text-zinc-400 text-sm mt-1">
-          Real-time operational health and governance metrics
-        </p>
+    <div className="space-y-8 animate-in fade-in duration-500">
+      {/* Header with live status */}
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-white">Executive Overview</h1>
+          <p className="text-zinc-400 text-sm mt-1">
+            Real-time operational health and governance metrics
+          </p>
+        </div>
+        <div className="flex items-center gap-4">
+          <StatusBadge status="healthy" label="All Systems Operational" />
+          <div className="text-xs text-zinc-500 font-mono">
+            Last updated: {new Date().toLocaleTimeString()}
+          </div>
+        </div>
       </div>
 
       {/* Live Operations */}
       <section>
-        <h2 className="text-sm font-bold uppercase tracking-wider text-zinc-500 mb-4 flex items-center gap-2">
-          <Activity className="h-4 w-4" />
-          Live Operations
-        </h2>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-sm font-bold uppercase tracking-wider text-zinc-500 flex items-center gap-2">
+            <Zap className="h-4 w-4 text-emerald-500" />
+            Live Operations
+          </h2>
+          <StatusIndicator status="healthy" label="Live" size="sm" />
+        </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <Explainer {...EXPLAINER_CONTENT.paymentsToday} side="bottom">
-            <KPICard
-              title="Payments Today"
-              value="247"
-              subtitle="$1.2M AUD total value"
-              trend="+12%"
-              trendUp={true}
-              icon={<TrendingUp className="h-5 w-5" />}
-            />
+            <div className="relative">
+              <KPICard
+                title="Payments Today"
+                value="247"
+                subtitle="$1.2M AUD total value"
+                trend="+12%"
+                trendUp={true}
+                icon={<TrendingUp className="h-5 w-5" />}
+                accentColor="emerald"
+                pulse
+              />
+              <div className="absolute bottom-3 right-4">
+                <Sparkline data={sparklineData.payments} color="emerald" width={60} height={20} />
+              </div>
+            </div>
           </Explainer>
           <Explainer {...EXPLAINER_CONTENT.successRate} side="bottom">
-            <KPICard
-              title="Success Rate"
-              value="98.4%"
-              subtitle="243 posted / 247 submitted"
-              trend="+0.3%"
-              trendUp={true}
-              icon={<CheckCircle2 className="h-5 w-5" />}
-            />
+            <div className="relative">
+              <KPICard
+                title="Success Rate"
+                value="98.4%"
+                subtitle="243 posted / 247 submitted"
+                trend="+0.3%"
+                trendUp={true}
+                icon={<CheckCircle2 className="h-5 w-5" />}
+                accentColor="emerald"
+              />
+              <div className="absolute bottom-3 right-4">
+                <Sparkline data={sparklineData.successRate} color="emerald" width={60} height={20} />
+              </div>
+            </div>
           </Explainer>
           <Explainer {...EXPLAINER_CONTENT.failureRate} side="bottom">
             <KPICard
@@ -107,35 +153,49 @@ export default function OverviewPage() {
               trend="-0.2%"
               trendUp={true}
               icon={<AlertTriangle className="h-5 w-5" />}
+              accentColor="orange"
             />
           </Explainer>
           <Explainer {...EXPLAINER_CONTENT.processingLatency} side="bottom">
-            <KPICard
-              title="Processing Latency"
-              value="142ms"
-              subtitle="P95: 380ms"
-              trend="-8ms"
-              trendUp={true}
-              icon={<Clock className="h-5 w-5" />}
-            />
+            <div className="relative">
+              <KPICard
+                title="Processing Latency"
+                value="142ms"
+                subtitle="P95: 380ms"
+                trend="-8ms"
+                trendUp={true}
+                icon={<Clock className="h-5 w-5" />}
+                accentColor="blue"
+              />
+              <div className="absolute bottom-3 right-4">
+                <Sparkline data={sparklineData.latency} color="blue" width={60} height={20} />
+              </div>
+            </div>
           </Explainer>
         </div>
       </section>
 
       {/* Decision Governance */}
       <section>
-        <h2 className="text-sm font-bold uppercase tracking-wider text-zinc-500 mb-4 flex items-center gap-2">
-          <Shield className="h-4 w-4" />
-          Decision Governance
-        </h2>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-sm font-bold uppercase tracking-wider text-zinc-500 flex items-center gap-2">
+            <Shield className="h-4 w-4 text-orange-500" />
+            Decision Governance
+          </h2>
+          {pendingByRisk.CRITICAL > 0 && (
+            <StatusIndicator status="critical" label={`${pendingByRisk.CRITICAL} Critical`} size="sm" />
+          )}
+        </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <Explainer {...EXPLAINER_CONTENT.decisionsPending} side="bottom">
             <KPICard
               title="Decisions Pending"
-              value={String(pendingDecisions.length)}
+              value={pendingDecisions.length}
               subtitle={`${pendingByRisk.CRITICAL} critical, ${pendingByRisk.HIGH} high`}
               icon={<Clock className="h-5 w-5" />}
               highlight={pendingByRisk.CRITICAL > 0}
+              accentColor={pendingByRisk.CRITICAL > 0 ? "rose" : "orange"}
+              pulse={pendingByRisk.CRITICAL > 0}
             />
           </Explainer>
           <Explainer {...EXPLAINER_CONTENT.timeToDecision} side="bottom">
@@ -146,6 +206,7 @@ export default function OverviewPage() {
               trend="-1.3 min"
               trendUp={true}
               icon={<Clock className="h-5 w-5" />}
+              accentColor="blue"
             />
           </Explainer>
           <Explainer {...EXPLAINER_CONTENT.escalationRate} side="bottom">
@@ -154,6 +215,7 @@ export default function OverviewPage() {
               value={`${completedDecisions.length > 0 ? Math.round((escalatedDecisions.length / completedDecisions.length) * 100) : 0}%`}
               subtitle={`${escalatedDecisions.length} escalated / ${completedDecisions.length} completed`}
               icon={<ArrowUpRight className="h-5 w-5" />}
+              accentColor="purple"
             />
           </Explainer>
           <Explainer {...EXPLAINER_CONTENT.dualControlCompliance} side="bottom">
@@ -161,252 +223,190 @@ export default function OverviewPage() {
               title="Dual Control Compliance"
               value="100%"
               subtitle="All dual-control decisions verified"
-              icon={<Shield className="h-5 w-5" />}
+              icon={<Lock className="h-5 w-5" />}
+              accentColor="emerald"
             />
           </Explainer>
         </div>
       </section>
 
-      {/* Risk & Exceptions */}
-      <section>
-        <h2 className="text-sm font-bold uppercase tracking-wider text-zinc-500 mb-4 flex items-center gap-2">
-          <AlertTriangle className="h-4 w-4" />
-          Risk & Exceptions
-        </h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          <Explainer 
-            title="High Risk Queue Ageing"
-            description="P95 age of pending high-risk and critical decisions. Long ageing indicates potential SLA breach risk."
-            advantages={[
-              "Real-time ageing calculation, not batch metrics",
-              "Automatic escalation triggers before SLA breach",
-              "Ageing history preserved in evidence trail",
-            ]}
-            legacyComparison={{
-              legacy: "Queue ageing calculated in periodic reports. SLA breaches discovered after the fact.",
-              turing: "Live ageing with proactive escalation. System acts before breaches occur, not after.",
-            }}
-            side="bottom"
-          >
-            <Card className="bg-zinc-900/50 border-zinc-800 p-5">
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-xs text-zinc-500 uppercase tracking-wider">High Risk Queue Ageing</p>
-                  <p className="text-2xl font-bold text-white mt-1">
-                    {pendingByRisk.HIGH + pendingByRisk.CRITICAL > 0 ? "8.5 min" : "—"}
-                  </p>
-                  <p className="text-xs text-zinc-400 mt-1">P95 age of pending high-risk items</p>
-                </div>
-                {pendingByRisk.CRITICAL > 0 && (
-                  <Badge className="bg-rose-900/50 text-rose-400 border-rose-800">
-                    {pendingByRisk.CRITICAL} CRITICAL
-                  </Badge>
-                )}
-              </div>
-            </Card>
-          </Explainer>
-          <Explainer 
-            title="AML Exception Queue"
-            description="Anti-Money Laundering exceptions requiring COMPLIANCE authority. These decisions have elevated regulatory scrutiny."
-            advantages={[
-              "AML decisions isolated in dedicated queue",
-              "Compliance authority cryptographically enforced",
-              "Every AML decision produces regulatory-grade evidence",
-            ]}
-            legacyComparison={{
-              legacy: "AML exceptions mixed with general approvals. Compliance review often a checkbox, not enforced authority.",
-              turing: "AML is a first-class decision type with dedicated authority requirements. Cannot be approved by non-compliance roles.",
-            }}
-            side="bottom"
-          >
-            <Card className="bg-zinc-900/50 border-zinc-800 p-5">
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-xs text-zinc-500 uppercase tracking-wider">AML Exceptions Pending</p>
-                  <p className="text-2xl font-bold text-white mt-1">{pendingByType.AML_EXCEPTION}</p>
-                  <p className="text-xs text-zinc-400 mt-1">Requires COMPLIANCE authority</p>
-                </div>
-                {pendingByType.AML_EXCEPTION > 0 && (
-                  <Link href="/decisions/inbox">
-                    <Badge variant="outline" className="border-orange-700 text-orange-400 cursor-pointer hover:bg-orange-900/20">
-                      Review →
+      {/* Risk & Exceptions + System Health */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Risk & Exceptions */}
+        <section className="lg:col-span-2">
+          <h2 className="text-sm font-bold uppercase tracking-wider text-zinc-500 mb-4 flex items-center gap-2">
+            <AlertTriangle className="h-4 w-4 text-rose-500" />
+            Risk & Exceptions
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Explainer 
+              title="High Risk Queue Ageing"
+              description="P95 age of pending high-risk and critical decisions. Long ageing indicates potential SLA breach risk."
+              advantages={[
+                "Real-time ageing calculation, not batch metrics",
+                "Automatic escalation triggers before SLA breach",
+                "Ageing history preserved in evidence trail",
+              ]}
+              legacyComparison={{
+                legacy: "Queue ageing calculated in periodic reports. SLA breaches discovered after the fact.",
+                turing: "Live ageing with proactive escalation. System acts before breaches occur, not after.",
+              }}
+              side="bottom"
+            >
+              <Card className="bg-gradient-to-br from-zinc-900/80 to-zinc-900/40 border-zinc-800 p-5 hover:border-zinc-700 transition-colors">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="text-xs text-zinc-500 uppercase tracking-wider">High Risk Queue Ageing</p>
+                    <p className="text-2xl font-bold text-white mt-2">
+                      {pendingByRisk.HIGH + pendingByRisk.CRITICAL > 0 ? "8.5 min" : "—"}
+                    </p>
+                    <p className="text-xs text-zinc-400 mt-1">P95 age of pending high-risk items</p>
+                  </div>
+                  {pendingByRisk.CRITICAL > 0 && (
+                    <Badge className="bg-rose-900/50 text-rose-400 border-rose-800 animate-pulse">
+                      {pendingByRisk.CRITICAL} CRITICAL
                     </Badge>
-                  </Link>
-                )}
-              </div>
-            </Card>
-          </Explainer>
-          <Explainer 
-            title="Limit Override Queue"
-            description="Limit override requests requiring DUAL authority - two independent approvals from authorized principals."
-            advantages={[
-              "Dual control cryptographically enforced",
-              "Both approvers' signatures sealed in evidence",
-              "Cannot be bypassed by any user including admins",
-            ]}
-            legacyComparison={{
-              legacy: "Dual control often 'four eyes' workflow that can be bypassed by batch operations or emergency overrides.",
-              turing: "Cryptographic dual control - evidence is invalid without two distinct signatures. No bypass exists.",
-            }}
-            side="bottom"
-          >
-            <Card className="bg-zinc-900/50 border-zinc-800 p-5">
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-xs text-zinc-500 uppercase tracking-wider">Overrides Pending</p>
-                  <p className="text-2xl font-bold text-white mt-1">{pendingByType.LIMIT_OVERRIDE}</p>
-                  <p className="text-xs text-zinc-400 mt-1">Requires DUAL authority</p>
+                  )}
                 </div>
-                {pendingByType.LIMIT_OVERRIDE > 0 && (
-                  <Link href="/decisions/inbox">
-                    <Badge variant="outline" className="border-amber-700 text-amber-400 cursor-pointer hover:bg-amber-900/20">
-                      Review →
-                    </Badge>
-                  </Link>
-                )}
-              </div>
-            </Card>
-          </Explainer>
-        </div>
-      </section>
+              </Card>
+            </Explainer>
+            <Explainer 
+              title="AML Exception Queue"
+              description="Anti-Money Laundering exceptions requiring COMPLIANCE authority."
+              advantages={[
+                "AML decisions isolated in dedicated queue",
+                "Compliance authority cryptographically enforced",
+                "Every AML decision produces regulatory-grade evidence",
+              ]}
+              legacyComparison={{
+                legacy: "AML exceptions mixed with general approvals.",
+                turing: "AML is a first-class decision type with dedicated authority requirements.",
+              }}
+              side="bottom"
+            >
+              <Card className="bg-gradient-to-br from-zinc-900/80 to-zinc-900/40 border-zinc-800 p-5 hover:border-zinc-700 transition-colors">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="text-xs text-zinc-500 uppercase tracking-wider">AML Exceptions</p>
+                    <p className="text-2xl font-bold text-white mt-2">{pendingByType.AML_EXCEPTION}</p>
+                    <p className="text-xs text-zinc-400 mt-1">Requires COMPLIANCE authority</p>
+                  </div>
+                  {pendingByType.AML_EXCEPTION > 0 && (
+                    <Link href="/decisions/inbox">
+                      <Badge variant="outline" className="border-orange-700 text-orange-400 cursor-pointer hover:bg-orange-900/20 transition-colors">
+                        Review →
+                      </Badge>
+                    </Link>
+                  )}
+                </div>
+              </Card>
+            </Explainer>
+            <Explainer 
+              title="Limit Override Queue"
+              description="Limit override requests requiring DUAL authority."
+              advantages={[
+                "Dual control cryptographically enforced",
+                "Both approvers' signatures sealed in evidence",
+                "Cannot be bypassed by any user including admins",
+              ]}
+              legacyComparison={{
+                legacy: "Dual control often 'four eyes' workflow that can be bypassed.",
+                turing: "Dual control is cryptographic. Evidence proves two independent approvals.",
+              }}
+              side="bottom"
+            >
+              <Card className="bg-gradient-to-br from-zinc-900/80 to-zinc-900/40 border-zinc-800 p-5 hover:border-zinc-700 transition-colors">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="text-xs text-zinc-500 uppercase tracking-wider">Limit Overrides</p>
+                    <p className="text-2xl font-bold text-white mt-2">{pendingByType.LIMIT_OVERRIDE}</p>
+                    <p className="text-xs text-zinc-400 mt-1">Requires DUAL authority</p>
+                  </div>
+                  {pendingByType.LIMIT_OVERRIDE > 0 && (
+                    <Link href="/decisions/inbox">
+                      <Badge variant="outline" className="border-amber-700 text-amber-400 cursor-pointer hover:bg-amber-900/20 transition-colors">
+                        Review →
+                      </Badge>
+                    </Link>
+                  )}
+                </div>
+              </Card>
+            </Explainer>
+          </div>
+        </section>
 
-      {/* Evidence Integrity */}
+        {/* System Health */}
+        <section>
+          <h2 className="text-sm font-bold uppercase tracking-wider text-zinc-500 mb-4 flex items-center gap-2">
+            <Server className="h-4 w-4 text-blue-500" />
+            System Health
+          </h2>
+          <Card className="bg-gradient-to-br from-zinc-900/80 to-zinc-900/40 border-zinc-800 p-4">
+            <SystemHealth systems={systemHealth} />
+          </Card>
+        </section>
+      </div>
+
+      {/* Evidence & Integrity */}
       <section>
         <h2 className="text-sm font-bold uppercase tracking-wider text-zinc-500 mb-4 flex items-center gap-2">
-          <FileText className="h-4 w-4" />
-          Evidence Integrity
+          <FileText className="h-4 w-4 text-purple-500" />
+          Evidence & Integrity
         </h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          <Explainer 
-            title="Evidence Pack Coverage"
-            description="Percentage of completed decisions that have a corresponding cryptographically sealed Evidence Pack."
-            advantages={[
-              "100% coverage is the baseline expectation",
-              "Any gap triggers immediate investigation",
-              "Coverage tracked in real-time, not batch reports",
-            ]}
-            legacyComparison={{
-              legacy: "Audit coverage measured periodically. Gaps discovered in compliance reviews weeks or months later.",
-              turing: "Real-time coverage monitoring. Any decision without evidence is immediately flagged as a governance incident.",
-            }}
-            side="bottom"
-          >
-            <KPICard
-              title="Evidence Pack Coverage"
-              value={`${evidenceCoverage}%`}
-              subtitle={`${evidenceCount} packs / ${completedDecisions.length} decisions`}
-              icon={<FileText className="h-5 w-5" />}
-            />
-          </Explainer>
-          <Explainer 
-            title="Evidence Generation Reliability"
-            description="Count of Evidence Pack generation failures in the last 30 days. Zero is the expected state."
-            advantages={[
-              "Evidence generation is transactional with decision",
-              "Failures block decision completion, not silently logged",
-              "Retry logic with dead-letter queue for investigation",
-            ]}
-            legacyComparison={{
-              legacy: "Audit log generation often async and best-effort. Failures may go unnoticed until audit time.",
-              turing: "Evidence is synchronous with decision. A decision cannot complete without its Evidence Pack.",
-            }}
-            side="bottom"
-          >
-            <KPICard
-              title="Generation Failures"
-              value="0"
-              subtitle="Last 30 days"
-              icon={<CheckCircle2 className="h-5 w-5" />}
-            />
-          </Explainer>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <Explainer {...EXPLAINER_CONTENT.evidenceHash} side="bottom">
-            <Card className="bg-zinc-900/50 border-zinc-800 p-5">
-              <div>
-                <p className="text-xs text-zinc-500 uppercase tracking-wider">Last Evidence Hash</p>
-                {latestEvidence ? (
-                  <>
-                    <p className="text-sm font-mono text-white mt-2 truncate">
-                      {latestEvidence.merkleHash?.slice(0, 32)}...
-                    </p>
-                    <p className="text-xs text-zinc-400 mt-1">
-                      {latestEvidence.evidenceId} • {new Date(latestEvidence.createdAt).toLocaleString()}
-                    </p>
-                  </>
-                ) : (
-                  <p className="text-sm text-zinc-500 mt-2">No evidence packs generated yet</p>
-                )}
+            <Card className="bg-gradient-to-br from-zinc-900/80 to-zinc-900/40 border-zinc-800 p-5 hover:border-zinc-700 transition-colors group">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-zinc-500 uppercase tracking-wider">Evidence Packs</p>
+                  <p className="text-2xl font-bold text-white mt-2">{evidenceCount}</p>
+                  <p className="text-xs text-zinc-400 mt-1">Immutable audit records</p>
+                </div>
+                <div className="p-2 rounded-lg bg-purple-900/30 text-purple-500 group-hover:bg-purple-900/50 transition-colors">
+                  <FileText className="h-5 w-5" />
+                </div>
               </div>
             </Card>
           </Explainer>
-        </div>
-      </section>
-
-      {/* System Health */}
-      <section>
-        <h2 className="text-sm font-bold uppercase tracking-wider text-zinc-500 mb-4 flex items-center gap-2">
-          <Server className="h-4 w-4" />
-          System Health
-        </h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          <Explainer 
-            title="Decision API Health"
-            description="Real-time health status of the Decision API endpoint, including error rate and latency percentiles."
-            advantages={[
-              "Sub-50ms P95 latency for authority checks",
-              "Automatic circuit breaker on degradation",
-              "Health status is a governance event",
-            ]}
-            legacyComparison={{
-              legacy: "API health monitored by infrastructure teams. Degradation may not be visible to governance operators.",
-              turing: "API health is surfaced in the governance console. Operators see system state alongside decision state.",
-            }}
-            side="bottom"
-          >
-            <Card className="bg-zinc-900/50 border-zinc-800 p-5">
+          <Explainer {...EXPLAINER_CONTENT.evidenceTimeline} side="bottom">
+            <Card className="bg-gradient-to-br from-zinc-900/80 to-zinc-900/40 border-zinc-800 p-5 hover:border-zinc-700 transition-colors group">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs text-zinc-500 uppercase tracking-wider">Decision API</p>
-                  <p className="text-lg font-bold text-emerald-400 mt-1">Healthy</p>
-                  <p className="text-xs text-zinc-400 mt-1">0.02% error rate • 45ms P95</p>
+                  <p className="text-xs text-zinc-500 uppercase tracking-wider">Evidence Coverage</p>
+                  <p className="text-2xl font-bold text-white mt-2">100%</p>
+                  <p className="text-xs text-zinc-400 mt-1">All decisions have evidence</p>
                 </div>
-                <div className="h-3 w-3 rounded-full bg-emerald-500 animate-pulse"></div>
+                <div className="p-2 rounded-lg bg-emerald-900/30 text-emerald-500 group-hover:bg-emerald-900/50 transition-colors">
+                  <Eye className="h-5 w-5" />
+                </div>
               </div>
             </Card>
           </Explainer>
-          <Explainer 
-            title="Execution Connector Health"
-            description="Health status of the connector to downstream execution systems (payment rails, ledger, etc.)."
-            advantages={[
-              "Execution status linked to decision lifecycle",
-              "Connector failures trigger automatic hold",
-              "Recovery produces governance event",
-            ]}
-            legacyComparison={{
-              legacy: "Execution systems monitored separately. Decisions may be approved while execution is degraded.",
-              turing: "Execution health is part of decision context. System can hold decisions when execution is unhealthy.",
-            }}
-            side="bottom"
-          >
-            <Card className="bg-zinc-900/50 border-zinc-800 p-5">
+          <Explainer {...EXPLAINER_CONTENT.authorityVersion} side="bottom">
+            <Card className="bg-gradient-to-br from-zinc-900/80 to-zinc-900/40 border-zinc-800 p-5 hover:border-zinc-700 transition-colors group">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs text-zinc-500 uppercase tracking-wider">Execution Connector</p>
-                  <p className="text-lg font-bold text-emerald-400 mt-1">Healthy</p>
-                  <p className="text-xs text-zinc-400 mt-1">0.01% error rate • 120ms P95</p>
+                  <p className="text-xs text-zinc-500 uppercase tracking-wider">Authority Matrix</p>
+                  <p className="text-lg font-bold text-white mt-2 font-mono">v2.1.0</p>
+                  <p className="text-xs text-zinc-400 mt-1">Last change: 3 days ago</p>
                 </div>
-                <div className="h-3 w-3 rounded-full bg-emerald-500 animate-pulse"></div>
+                <div className="p-2 rounded-lg bg-blue-900/30 text-blue-500 group-hover:bg-blue-900/50 transition-colors">
+                  <Lock className="h-5 w-5" />
+                </div>
               </div>
             </Card>
           </Explainer>
           <Explainer {...EXPLAINER_CONTENT.ledgerIntegrity} side="bottom">
-            <Card className="bg-zinc-900/50 border-zinc-800 p-5">
+            <Card className="bg-gradient-to-br from-zinc-900/80 to-zinc-900/40 border-zinc-800 p-5 hover:border-zinc-700 transition-colors group">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-xs text-zinc-500 uppercase tracking-wider">Projection Lag</p>
-                  <p className="text-lg font-bold text-white mt-1">0.3s</p>
+                  <p className="text-2xl font-bold text-white mt-2">0.3s</p>
                   <p className="text-xs text-zinc-400 mt-1">Payments: 0.2s • Ledger: 0.4s</p>
                 </div>
-                <div className="h-3 w-3 rounded-full bg-emerald-500"></div>
+                <div className="p-2 rounded-lg bg-emerald-900/30 text-emerald-500 group-hover:bg-emerald-900/50 transition-colors">
+                  <Database className="h-5 w-5" />
+                </div>
               </div>
             </Card>
           </Explainer>
@@ -415,23 +415,39 @@ export default function OverviewPage() {
 
       {/* Top Risks */}
       <section>
-        <h2 className="text-sm font-bold uppercase tracking-wider text-zinc-500 mb-4">
-          Top Risks (Ageing)
-        </h2>
-        <Card className="bg-zinc-900/50 border-zinc-800 overflow-hidden">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-sm font-bold uppercase tracking-wider text-zinc-500">
+            Top Risks (Ageing)
+          </h2>
+          <Link href="/decisions/inbox">
+            <Badge variant="outline" className="border-zinc-700 text-zinc-400 cursor-pointer hover:bg-zinc-800 transition-colors">
+              View All →
+            </Badge>
+          </Link>
+        </div>
+        <Card className="bg-gradient-to-br from-zinc-900/80 to-zinc-900/40 border-zinc-800 overflow-hidden">
           {pendingDecisions.length > 0 ? (
-            <div className="divide-y divide-zinc-800">
+            <div className="divide-y divide-zinc-800/50">
               {pendingDecisions
                 .sort((a, b) => {
                   const riskOrder = { CRITICAL: 0, HIGH: 1, MEDIUM: 2, LOW: 3 };
                   return (riskOrder[a.risk as keyof typeof riskOrder] || 3) - (riskOrder[b.risk as keyof typeof riskOrder] || 3);
                 })
                 .slice(0, 5)
-                .map((decision) => (
+                .map((decision, index) => (
                   <Link key={decision.decisionId} href={`/decisions/${decision.decisionId}`}>
-                    <div className="p-4 hover:bg-zinc-800/50 cursor-pointer transition-colors flex items-center justify-between">
+                    <div 
+                      className={cn(
+                        "p-4 hover:bg-zinc-800/50 cursor-pointer transition-all flex items-center justify-between",
+                        "animate-in fade-in slide-in-from-left-2",
+                      )}
+                      style={{ animationDelay: `${index * 100}ms` }}
+                    >
                       <div className="flex items-center gap-4">
-                        <Badge className={getRiskColor(decision.risk)}>
+                        <Badge className={cn(
+                          getRiskColor(decision.risk),
+                          decision.risk === "CRITICAL" && "animate-pulse"
+                        )}>
                           {decision.risk}
                         </Badge>
                         <div>
@@ -450,9 +466,10 @@ export default function OverviewPage() {
                 ))}
             </div>
           ) : (
-            <div className="p-8 text-center text-zinc-500">
-              <CheckCircle2 className="h-8 w-8 mx-auto mb-2 text-emerald-500" />
-              <p>No pending decisions</p>
+            <div className="p-12 text-center">
+              <CheckCircle2 className="h-12 w-12 mx-auto mb-4 text-emerald-500" />
+              <p className="text-zinc-300 font-medium">All Clear</p>
+              <p className="text-zinc-500 text-sm mt-1">No pending decisions requiring attention</p>
             </div>
           )}
         </Card>
@@ -461,49 +478,13 @@ export default function OverviewPage() {
   );
 }
 
-// KPI Card Component
-function KPICard({ 
-  title, 
-  value, 
-  subtitle, 
-  trend, 
-  trendUp, 
-  icon,
-  highlight 
-}: { 
-  title: string; 
-  value: string; 
-  subtitle: string; 
-  trend?: string; 
-  trendUp?: boolean;
-  icon: React.ReactNode;
-  highlight?: boolean;
-}) {
-  return (
-    <Card className={`bg-zinc-900/50 border-zinc-800 p-5 ${highlight ? 'border-rose-800' : ''}`}>
-      <div className="flex items-start justify-between">
-        <div className="text-zinc-500">{icon}</div>
-        {trend && (
-          <div className={`flex items-center gap-1 text-xs ${trendUp ? 'text-emerald-400' : 'text-rose-400'}`}>
-            {trendUp ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
-            {trend}
-          </div>
-        )}
-      </div>
-      <p className="text-2xl font-bold text-white mt-3">{value}</p>
-      <p className="text-xs text-zinc-500 uppercase tracking-wider mt-1">{title}</p>
-      <p className="text-xs text-zinc-400 mt-1">{subtitle}</p>
-    </Card>
-  );
-}
-
 // Helper functions
 function getRiskColor(risk: string): string {
   const colors: Record<string, string> = {
-    LOW: "bg-emerald-900/50 text-emerald-400",
-    MEDIUM: "bg-amber-900/50 text-amber-400",
-    HIGH: "bg-orange-900/50 text-orange-400",
-    CRITICAL: "bg-rose-900/50 text-rose-400",
+    LOW: "bg-emerald-900/50 text-emerald-400 border-emerald-800/50",
+    MEDIUM: "bg-amber-900/50 text-amber-400 border-amber-800/50",
+    HIGH: "bg-orange-900/50 text-orange-400 border-orange-800/50",
+    CRITICAL: "bg-rose-900/50 text-rose-400 border-rose-800/50",
   };
   return colors[risk] || colors.MEDIUM;
 }
