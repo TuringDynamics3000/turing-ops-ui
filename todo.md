@@ -59,3 +59,12 @@
 - [x] Add explainers to State Explorers (Payments, Ledger, Risk)
 - [x] Add explainers to Evidence Pack (Immutability, Cryptographic proof, Audit trail)
 - [x] Ensure all explainers highlight advantages over Constantinople and Thought Machine
+
+
+## Synthetic Data Population
+- [x] Create comprehensive seed data script with 50+ decisions
+- [x] Add variety of decision types (PAYMENT, LIMIT_OVERRIDE, AML_EXCEPTION, POLICY_CHANGE)
+- [x] Include mix of statuses (PENDING, APPROVED, REJECTED, ESCALATED, EXECUTED)
+- [x] Add realistic counterparties, amounts, and risk profiles
+- [x] Create corresponding evidence packs for completed decisions
+- [x] Update dashboard metrics to pull from real database counts

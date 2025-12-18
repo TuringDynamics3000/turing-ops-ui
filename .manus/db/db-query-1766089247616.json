@@ -1,0 +1,154 @@
+{
+  "query": "DESCRIBE decisions;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user zFXp9RNvPn4ZSGY.f4c672cde8f4 --database AKEywqHrvuBg7Sz2tPDLPz --execute DESCRIBE decisions;",
+  "rows": [
+    {
+      "Field": "id",
+      "Type": "int(11)",
+      "Null": "NO",
+      "Key": "PRI",
+      "Default": "NULL",
+      "Extra": "auto_increment"
+    },
+    {
+      "Field": "decisionId",
+      "Type": "varchar(32)",
+      "Null": "NO",
+      "Key": "UNI",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "type",
+      "Type": "enum('PAYMENT','LIMIT_OVERRIDE','AML_EXCEPTION','POLICY_CHANGE')",
+      "Null": "NO",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "subject",
+      "Type": "varchar(512)",
+      "Null": "NO",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "policyCode",
+      "Type": "varchar(32)",
+      "Null": "NO",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "risk",
+      "Type": "enum('LOW','MEDIUM','HIGH','CRITICAL')",
+      "Null": "NO",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "requiredAuthority",
+      "Type": "enum('SUPERVISOR','COMPLIANCE','DUAL')",
+      "Null": "NO",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "status",
+      "Type": "enum('PENDING','APPROVED','REJECTED','ESCALATED','EXECUTED')",
+      "Null": "NO",
+      "Key": "",
+      "Default": "PENDING",
+      "Extra": ""
+    },
+    {
+      "Field": "slaDeadline",
+      "Type": "timestamp",
+      "Null": "NO",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "amount",
+      "Type": "varchar(64)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "beneficiary",
+      "Type": "varchar(256)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "context",
+      "Type": "text",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "createdAt",
+      "Type": "timestamp",
+      "Null": "NO",
+      "Key": "",
+      "Default": "CURRENT_TIMESTAMP",
+      "Extra": ""
+    },
+    {
+      "Field": "updatedAt",
+      "Type": "timestamp",
+      "Null": "NO",
+      "Key": "",
+      "Default": "CURRENT_TIMESTAMP",
+      "Extra": "DEFAULT_GENERATED on update CURRENT_TIMESTAMP"
+    },
+    {
+      "Field": "decidedAt",
+      "Type": "timestamp",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "decidedBy",
+      "Type": "varchar(256)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "justification",
+      "Type": "text",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "executionRef",
+      "Type": "varchar(64)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    }
+  ],
+  "messages": [],
+  "stdout": "Field\tType\tNull\tKey\tDefault\tExtra\nid\tint(11)\tNO\tPRI\tNULL\tauto_increment\ndecisionId\tvarchar(32)\tNO\tUNI\tNULL\t\ntype\tenum('PAYMENT','LIMIT_OVERRIDE','AML_EXCEPTION','POLICY_CHANGE')\tNO\t\tNULL\t\nsubject\tvarchar(512)\tNO\t\tNULL\t\npolicyCode\tvarchar(32)\tNO\t\tNULL\t\nrisk\tenum('LOW','MEDIUM','HIGH','CRITICAL')\tNO\t\tNULL\t\nrequiredAuthority\tenum('SUPERVISOR','COMPLIANCE','DUAL')\tNO\t\tNULL\t\nstatus\tenum('PENDING','APPROVED','REJECTED','ESCALATED','EXECUTED')\tNO\t\tPENDING\t\nslaDeadline\ttimestamp\tNO\t\tNULL\t\namount\tvarchar(64)\tYES\t\tNULL\t\nbeneficiary\tvarchar(256)\tYES\t\tNULL\t\ncontext\ttext\tYES\t\tNULL\t\ncreatedAt\ttimestamp\tNO\t\tCURRENT_TIMESTAMP\t\nupdatedAt\ttimestamp\tNO\t\tCURRENT_TIMESTAMP\tDEFAULT_GENERATED on update CURRENT_TIMESTAMP\ndecidedAt\ttimestamp\tYES\t\tNULL\t\ndecidedBy\tvarchar(256)\tYES\t\tNULL\t\njustification\ttext\tYES\t\tNULL\t\nexecutionRef\tvarchar(64)\tYES\t\tNULL\t\n",
+  "stderr": "",
+  "execution_time_ms": 1529
+}

@@ -1,0 +1,8 @@
+{
+  "query": "DELETE FROM evidence_packs; DELETE FROM decisions WHERE decision_id LIKE 'DEC-2024-%';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user zFXp9RNvPn4ZSGY.f4c672cde8f4 --database AKEywqHrvuBg7Sz2tPDLPz --execute DELETE FROM evidence_packs; DELETE FROM decisions WHERE decision_id LIKE 'DEC-2024-%';",
+  "returncode": 1,
+  "logs": [
+    "ERROR 1054 (42S22) at line 1: Unknown column 'decision_id' in 'where clause'"
+  ]
+}

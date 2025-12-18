@@ -1,0 +1,30 @@
+{
+  "query": "SELECT status, COUNT(*) as count FROM decisions GROUP BY status;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user zFXp9RNvPn4ZSGY.f4c672cde8f4 --database AKEywqHrvuBg7Sz2tPDLPz --execute SELECT status, COUNT(*) as count FROM decisions GROUP BY status;",
+  "rows": [
+    {
+      "status": "APPROVED",
+      "count": "28"
+    },
+    {
+      "status": "PENDING",
+      "count": "18"
+    },
+    {
+      "status": "ESCALATED",
+      "count": "4"
+    },
+    {
+      "status": "EXECUTED",
+      "count": "2"
+    },
+    {
+      "status": "REJECTED",
+      "count": "6"
+    }
+  ],
+  "messages": [],
+  "stdout": "status\tcount\nAPPROVED\t28\nPENDING\t18\nESCALATED\t4\nEXECUTED\t2\nREJECTED\t6\n",
+  "stderr": "",
+  "execution_time_ms": 1627
+}
