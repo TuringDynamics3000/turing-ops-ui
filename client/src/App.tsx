@@ -10,8 +10,10 @@ import { Shell } from "./components/shell/Shell";
 import InboxPage from "./pages/decisions/inbox/page";
 import DecisionDetailPage from "./pages/decisions/[id]/page";
 import EvidencePage from "./pages/evidence/page";
+import ConfigPage from "./pages/system/config/page";
 
 function Router() {
+  // make sure to consider if you need authentication for certain routes
   return (
     <Shell>
       <Switch>
@@ -19,6 +21,7 @@ function Router() {
         <Route path="/decisions/inbox" component={InboxPage} />
         <Route path="/decisions/:id" component={DecisionDetailPage} />
         <Route path="/evidence" component={EvidencePage} />
+        <Route path="/system/config" component={ConfigPage} />
         
         {/* Placeholder routes for other sections */}
         <Route path="/decisions/active" component={() => <div className="text-zinc-500 font-mono">/decisions/active - Coming Soon</div>} />
@@ -29,7 +32,6 @@ function Router() {
         <Route path="/risk" component={() => <div className="text-zinc-500 font-mono">/risk - Coming Soon</div>} />
         <Route path="/audit" component={() => <div className="text-zinc-500 font-mono">/audit - Coming Soon</div>} />
         <Route path="/system/health" component={() => <div className="text-zinc-500 font-mono">/system/health - Coming Soon</div>} />
-        <Route path="/system/config" component={() => <div className="text-zinc-500 font-mono">/system/config - Coming Soon</div>} />
         
         <Route component={NotFound} />
       </Switch>

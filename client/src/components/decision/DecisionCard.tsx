@@ -1,15 +1,43 @@
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
-import { Decision } from "@/lib/decisions";
 import { DecisionActions } from "./DecisionActions";
 import { Shield, Clock, FileText, Activity } from "lucide-react";
 
+// Database Decision type from API
+interface DbDecision {
+  id: number;
+  decisionId: string;
+  type: "PAYMENT" | "LIMIT_OVERRIDE" | "AML_EXCEPTION";
+  subject: string;
+  policyCode: string;
+  risk: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
+  requiredAuthority: "SUPERVISOR" | "COMPLIANCE" | "DUAL";
+  status: string;
+  slaDeadline: Date;
+  amount: string | null;
+  beneficiary: string | null;
+  context: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 interface DecisionCardProps {
-  decision: Decision;
+  decision: DbDecision;
 }
 
 export function DecisionCard({ decision }: DecisionCardProps) {
+  // Calculate SLA seconds remaining
+  const now = new Date();
+  const deadline = new Date(decision.slaDeadline);
+  const slaSecondsRemaining = Math.max(0, Math.floor((deadline.getTime() - now.getTime()) / 1000));
+
+  // Format SLA time
+  const formatSla = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+  };
+
   return (
     <div className="max-w-4xl mx-auto space-y-6 animate-in slide-in-from-bottom-4 duration-500">
       {/* Header Card */}
@@ -18,7 +46,7 @@ export function DecisionCard({ decision }: DecisionCardProps) {
           <div>
             <div className="flex items-center gap-3 mb-3">
               <Badge variant="outline" className="font-mono text-xs border-zinc-700 text-zinc-400">
-                {decision.id}
+                {decision.decisionId}
               </Badge>
               <Badge className="bg-orange-500/10 text-orange-500 border-orange-500/20 hover:bg-orange-500/20">
                 {decision.status}
@@ -28,11 +56,11 @@ export function DecisionCard({ decision }: DecisionCardProps) {
             <div className="flex items-center gap-6 text-sm text-zinc-400">
               <div className="flex items-center gap-2">
                 <Shield className="h-4 w-4 text-zinc-500" />
-                <span>Policy: <span className="text-zinc-200 font-mono">{decision.policy}</span></span>
+                <span>Policy: <span className="text-zinc-200 font-mono">{decision.policyCode}</span></span>
               </div>
               <div className="flex items-center gap-2">
                 <Clock className="h-4 w-4 text-zinc-500" />
-                <span>Created: <span className="text-zinc-200 font-mono">{new Date(decision.created_at).toLocaleString()}</span></span>
+                <span>Created: <span className="text-zinc-200 font-mono">{new Date(decision.createdAt).toLocaleString()}</span></span>
               </div>
             </div>
           </div>
@@ -40,7 +68,7 @@ export function DecisionCard({ decision }: DecisionCardProps) {
           <div className="text-right">
             <div className="text-xs text-zinc-500 uppercase tracking-widest font-bold mb-1">SLA Remaining</div>
             <div className="text-3xl font-mono font-bold text-white tabular-nums">
-              00:0{Math.floor(decision.slaSecondsRemaining / 60)}:{String(decision.slaSecondsRemaining % 60).padStart(2, '0')}
+              {formatSla(slaSecondsRemaining)}
             </div>
           </div>
         </div>
@@ -82,8 +110,7 @@ export function DecisionCard({ decision }: DecisionCardProps) {
               <div className="col-span-2">
                 <div className="text-xs text-zinc-500 mb-1">Context</div>
                 <p className="text-sm text-zinc-300 leading-relaxed">
-                  Transaction flagged by rule {decision.policy}. Velocity check indicates 30% deviation from standard pattern. 
-                  Beneficiary is a known entity but amount exceeds daily auto-approval limit.
+                  {decision.context || `Transaction flagged by rule ${decision.policyCode}. Review required based on policy parameters.`}
                 </p>
               </div>
             </div>

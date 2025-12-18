@@ -2,17 +2,46 @@ import { Link } from "wouter";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Decision } from "@/lib/decisions";
 import { cn } from "@/lib/utils";
 import { AlertTriangle, Clock, ArrowRight } from "lucide-react";
 
+// Database Decision type from API
+interface DbDecision {
+  id: number;
+  decisionId: string;
+  type: "PAYMENT" | "LIMIT_OVERRIDE" | "AML_EXCEPTION";
+  subject: string;
+  policyCode: string;
+  risk: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
+  requiredAuthority: "SUPERVISOR" | "COMPLIANCE" | "DUAL";
+  status: string;
+  slaDeadline: Date;
+  amount: string | null;
+  beneficiary: string | null;
+  context: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 interface DecisionRowProps {
-  decision: Decision;
+  decision: DbDecision;
 }
 
 export function DecisionRow({ decision }: DecisionRowProps) {
   const isCritical = decision.risk === "CRITICAL" || decision.risk === "HIGH";
-  const isSlaRisk = decision.slaSecondsRemaining < 60;
+  
+  // Calculate SLA seconds remaining
+  const now = new Date();
+  const deadline = new Date(decision.slaDeadline);
+  const slaSecondsRemaining = Math.max(0, Math.floor((deadline.getTime() - now.getTime()) / 1000));
+  const isSlaRisk = slaSecondsRemaining < 60;
+
+  // Format SLA time
+  const formatSla = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+  };
 
   return (
     <Card className={cn(
@@ -33,7 +62,7 @@ export function DecisionRow({ decision }: DecisionRowProps) {
             </Badge>
             
             <span className="text-xs text-zinc-500 font-mono">
-              {decision.id}
+              {decision.decisionId}
             </span>
 
             {isCritical && (
@@ -49,7 +78,7 @@ export function DecisionRow({ decision }: DecisionRowProps) {
           </h3>
           
           <div className="flex items-center gap-4 mt-2 text-xs text-zinc-400 font-mono">
-            <span>Policy: <span className="text-zinc-300">{decision.policy}</span></span>
+            <span>Policy: <span className="text-zinc-300">{decision.policyCode}</span></span>
             <span className="text-zinc-700">|</span>
             <span>Auth: <span className="text-zinc-300">{decision.requiredAuthority}</span></span>
           </div>
@@ -62,10 +91,10 @@ export function DecisionRow({ decision }: DecisionRowProps) {
             isSlaRisk ? "text-rose-500 font-bold" : "text-zinc-400"
           )}>
             <Clock className="h-4 w-4" />
-            <span>00:0{Math.floor(decision.slaSecondsRemaining / 60)}:{String(decision.slaSecondsRemaining % 60).padStart(2, '0')}</span>
+            <span>{formatSla(slaSecondsRemaining)}</span>
           </div>
 
-          <Link href={`/decisions/${decision.id}`}>
+          <Link href={`/decisions/${decision.decisionId}`}>
             <Button 
               size="sm" 
               className="bg-zinc-100 text-zinc-900 hover:bg-white font-medium rounded-sm px-4 h-9 transition-transform active:scale-95"

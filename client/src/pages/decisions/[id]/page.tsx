@@ -1,18 +1,29 @@
 import { useRoute } from "wouter";
 import { DecisionCard } from "@/components/decision/DecisionCard";
-import { MOCK_DECISIONS } from "@/lib/decisions";
+import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Loader2 } from "lucide-react";
 import { Link } from "wouter";
 
 export default function DecisionDetailPage() {
   const [match, params] = useRoute("/decisions/:id");
   
+  const { data: decision, isLoading, error } = trpc.decisions.get.useQuery(
+    { decisionId: params?.id || "" },
+    { enabled: !!params?.id }
+  );
+
   if (!match) return null;
 
-  const decision = MOCK_DECISIONS.find(d => d.id === params.id);
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-[50vh]">
+        <Loader2 className="h-8 w-8 animate-spin text-orange-500" />
+      </div>
+    );
+  }
 
-  if (!decision) {
+  if (error || !decision) {
     return (
       <div className="flex flex-col items-center justify-center h-[50vh] text-zinc-500">
         <h2 className="text-xl font-bold text-white mb-2">Decision Not Found</h2>

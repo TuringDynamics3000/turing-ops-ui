@@ -1,10 +1,28 @@
 import { DecisionRow } from "@/components/inbox/DecisionRow";
-import { MOCK_DECISIONS } from "@/lib/decisions";
-import { Filter, SlidersHorizontal } from "lucide-react";
+import { trpc } from "@/lib/trpc";
+import { Filter, SlidersHorizontal, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export default function InboxPage() {
-  const pendingDecisions = MOCK_DECISIONS.filter(d => d.status === "PENDING");
+  const { data: decisions, isLoading, error } = trpc.decisions.list.useQuery({ status: "PENDING" });
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-[50vh]">
+        <Loader2 className="h-8 w-8 animate-spin text-orange-500" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-[50vh] text-red-500">
+        Error loading decisions: {error.message}
+      </div>
+    );
+  }
+
+  const pendingDecisions = decisions || [];
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
