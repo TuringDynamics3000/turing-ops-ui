@@ -68,3 +68,10 @@
 - [x] Add realistic counterparties, amounts, and risk profiles
 - [x] Create corresponding evidence packs for completed decisions
 - [x] Update dashboard metrics to pull from real database counts
+
+
+## Ledger Data Population
+- [x] Add comprehensive ledger entries with realistic transaction data
+- [x] Include variety of entry types (CREDIT, DEBIT)
+- [x] Add realistic counterparties and amounts
+- [x] Include integrity verification indicators
