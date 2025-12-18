@@ -5,36 +5,18 @@ import { Button } from "@/components/ui/button";
 import { Explainer } from "@/components/ui/explainer";
 import { EXPLAINER_CONTENT } from "@/lib/explainer-content";
 import { cn } from "@/lib/utils";
-import { AlertTriangle, Clock, ArrowRight } from "lucide-react";
-
-// Database Decision type from API
-interface DbDecision {
-  id: number;
-  decisionId: string;
-  type: "PAYMENT" | "LIMIT_OVERRIDE" | "AML_EXCEPTION" | "POLICY_CHANGE";
-  subject: string;
-  policyCode: string;
-  risk: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
-  requiredAuthority: "SUPERVISOR" | "COMPLIANCE" | "DUAL";
-  status: "PENDING" | "APPROVED" | "REJECTED" | "ESCALATED" | "EXECUTED";
-  slaDeadline: Date;
-  amount: string | null;
-  beneficiary: string | null;
-  context: string | null;
-  decidedAt: Date | null;
-  decidedBy: string | null;
-  justification: string | null;
-  executionRef: string | null;
-  createdAt: Date;
-  updatedAt: Date;
-}
+import { AlertTriangle, Clock, ArrowRight, Building2 } from "lucide-react";
+import type { DbDecision } from "@shared/decision-types";
+import { isGroupDecisionType, getDecisionTypeDisplayName } from "@shared/decision-types";
 
 interface DecisionRowProps {
   decision: DbDecision;
+  entityLegalName?: string;
 }
 
-export function DecisionRow({ decision }: DecisionRowProps) {
+export function DecisionRow({ decision, entityLegalName }: DecisionRowProps) {
   const isCritical = decision.risk === "CRITICAL" || decision.risk === "HIGH";
+  const isGroupDecision = isGroupDecisionType(decision.type);
   
   // Calculate SLA seconds remaining
   const now = new Date();
@@ -49,10 +31,21 @@ export function DecisionRow({ decision }: DecisionRowProps) {
     return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
   };
 
+  // Get badge color based on decision type
+  const getTypeBadgeClass = (type: string) => {
+    if (type === "PAYMENT") return "text-emerald-400 bg-emerald-950/30";
+    if (type === "LIMIT_OVERRIDE") return "text-amber-400 bg-amber-950/30";
+    if (type === "AML_EXCEPTION") return "text-rose-400 bg-rose-950/30";
+    if (type === "POLICY_CHANGE") return "text-purple-400 bg-purple-950/30";
+    if (type.startsWith("GROUP_")) return "text-blue-400 bg-blue-950/30";
+    return "text-zinc-400 bg-zinc-950/30";
+  };
+
   return (
     <Card className={cn(
       "group relative overflow-hidden transition-all duration-200 hover:border-zinc-600 border-zinc-800 bg-zinc-900/50",
-      isCritical && "border-l-4 border-l-orange-500"
+      isCritical && "border-l-4 border-l-orange-500",
+      isGroupDecision && "border-l-4 border-l-blue-500"
     )}>
       <div className="p-5 flex items-center justify-between gap-6">
         {/* Left: Info */}
@@ -60,7 +53,7 @@ export function DecisionRow({ decision }: DecisionRowProps) {
           <div className="flex items-center gap-3 mb-2">
             <Explainer
               title="Decision Type"
-              description={`This is a ${decision.type.replace("_", " ")} decision. Each type has specific authority requirements and evidence generation rules defined in the Authority Matrix.`}
+              description={`This is a ${getDecisionTypeDisplayName(decision.type)} decision. Each type has specific authority requirements and evidence generation rules defined in the Authority Matrix.`}
               advantages={[
                 "Decision types are policy-defined, not hardcoded",
                 "Each type maps to specific authority requirements",
@@ -75,18 +68,39 @@ export function DecisionRow({ decision }: DecisionRowProps) {
             >
               <Badge variant="outline" className={cn(
                 "font-mono text-[10px] tracking-wider uppercase rounded-sm px-1.5 py-0.5 border-zinc-700",
-                decision.type === "PAYMENT" && "text-emerald-400 bg-emerald-950/30",
-                decision.type === "LIMIT_OVERRIDE" && "text-amber-400 bg-amber-950/30",
-                decision.type === "AML_EXCEPTION" && "text-rose-400 bg-rose-950/30",
-                decision.type === "POLICY_CHANGE" && "text-purple-400 bg-purple-950/30"
+                getTypeBadgeClass(decision.type)
               )}>
-                {decision.type.replace("_", " ")}
+                {getDecisionTypeDisplayName(decision.type)}
               </Badge>
             </Explainer>
             
             <span className="text-xs text-zinc-500 font-mono">
               {decision.decisionId}
             </span>
+
+            {/* Entity Badge - Required for Group Inbox per Production Build Pack */}
+            {entityLegalName && (
+              <Explainer
+                title="Entity Context"
+                description="Every decision is anchored to a specific legal entity. Group scope never implies entity authority - each entity must be explicitly authorized."
+                advantages={[
+                  "Decisions always anchored to legal entity",
+                  "Entity badge visible in Group Inbox",
+                  "Group scope never overrides entity authority",
+                ]}
+                legacyComparison={{
+                  legacy: "Entity context often implicit or derived from user session. Group-level views may obscure entity boundaries.",
+                  turing: "Entity is always explicit. Group consolidation is read-only - no bulk actions across entity boundaries.",
+                }}
+                side="bottom"
+                showIcon={false}
+              >
+                <Badge variant="outline" className="font-mono text-[10px] tracking-wider rounded-sm px-1.5 py-0.5 border-zinc-700 text-cyan-400 bg-cyan-950/30 flex items-center gap-1 cursor-help">
+                  <Building2 className="h-3 w-3" />
+                  {entityLegalName}
+                </Badge>
+              </Explainer>
+            )}
 
             {isCritical && (
               <Explainer {...EXPLAINER_CONTENT.riskIndicator} side="bottom" showIcon={false}>

@@ -9,27 +9,7 @@ import { CheckCircle2, XCircle, AlertOctagon, Lock, Loader2 } from "lucide-react
 import { toast } from "sonner";
 import { useLocation } from "wouter";
 
-// Database Decision type from API
-interface DbDecision {
-  id: number;
-  decisionId: string;
-  type: "PAYMENT" | "LIMIT_OVERRIDE" | "AML_EXCEPTION" | "POLICY_CHANGE";
-  subject: string;
-  policyCode: string;
-  risk: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
-  requiredAuthority: "SUPERVISOR" | "COMPLIANCE" | "DUAL";
-  status: "PENDING" | "APPROVED" | "REJECTED" | "ESCALATED" | "EXECUTED";
-  slaDeadline: Date;
-  amount: string | null;
-  beneficiary: string | null;
-  context: string | null;
-  decidedAt: Date | null;
-  decidedBy: string | null;
-  justification: string | null;
-  executionRef: string | null;
-  createdAt: Date;
-  updatedAt: Date;
-}
+import type { DbDecision } from "@shared/decision-types";
 
 interface DecisionActionsProps {
   decision: DbDecision;
@@ -313,7 +293,7 @@ export function DecisionActions({ decision }: DecisionActionsProps) {
 // Helper function to check authority
 function checkAuthority(userRole: string, requiredAuthority: string): boolean {
   const authorityMap: Record<string, string[]> = {
-    "admin": ["SUPERVISOR", "COMPLIANCE", "DUAL"],
+    "admin": ["SUPERVISOR", "COMPLIANCE", "DUAL", "PLATFORM_ADMIN"],
     "supervisor": ["SUPERVISOR"],
     "compliance": ["COMPLIANCE"],
     "operator": [],

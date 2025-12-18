@@ -7,6 +7,9 @@ import {
   listDecisions, getDecisionById, updateDecision, createDecision,
   listPolicies, getPolicyByCode, updatePolicy, createPolicy,
   listEvidencePacks, getEvidencePackById, getEvidencePackByDecisionId, createEvidencePack,
+  listEntities, getEntityById, createEntity,
+  listGroups, getGroupById, createGroup, getGroupMembershipsWithEntities,
+  addEntityToGroup, activateGroupMembership, revokeGroupMembership,
   seedInitialData
 } from "./db";
 import { hasAuthority, normalizeRole, requiresDualControl, AUTHORITY_MATRIX, VISIBILITY_MATRIX, getAuthorityMatrixResponse } from "@shared/authority";
@@ -352,6 +355,158 @@ export const appRouter = router({
         );
         
         return history;
+      }),
+  }),
+
+  // ============================================
+  // ENTITY ROUTES
+  // Multi-entity consolidation support
+  // ============================================
+  entities: router({
+    // GET /entities - List all entities
+    list: publicProcedure.query(async () => {
+      return listEntities();
+    }),
+
+    // GET /entities/{id} - Get entity by ID
+    get: publicProcedure
+      .input(z.object({ id: z.number() }))
+      .query(async ({ input }) => {
+        return getEntityById(input.id);
+      }),
+
+    // POST /entities - Create a new entity (admin only)
+    create: adminProcedure
+      .input(z.object({
+        legalName: z.string().min(3, "Legal name must be at least 3 characters"),
+        tradingName: z.string().optional(),
+        abn: z.string().optional(),
+        status: z.enum(["ACTIVE", "SUSPENDED", "CLOSED"]).default("ACTIVE"),
+      }))
+      .mutation(async ({ input }) => {
+        const entity = await createEntity(input);
+        return { success: true, entityId: entity.entityId };
+      }),
+  }),
+
+  // ============================================
+  // GROUP ROUTES
+  // Group = governed aggregation construct (NOT a legal entity)
+  // Consolidation is read-only by default
+  // Group scope NEVER implies entity authority
+  // ============================================
+  groups: router({
+    // GET /groups - List all groups
+    list: publicProcedure.query(async () => {
+      return listGroups();
+    }),
+
+    // GET /groups/{id} - Get group by ID
+    get: publicProcedure
+      .input(z.object({ id: z.number() }))
+      .query(async ({ input }) => {
+        return getGroupById(input.id);
+      }),
+
+    // GET /groups/{id}/members - Get group members with entity details
+    getMembers: publicProcedure
+      .input(z.object({ groupId: z.number() }))
+      .query(async ({ input }) => {
+        return getGroupMembershipsWithEntities(input.groupId);
+      }),
+
+    // POST /groups - Create a new group (admin only)
+    // This creates a GROUP_CREATE decision that must be approved
+    create: adminProcedure
+      .input(z.object({
+        name: z.string().min(3, "Group name must be at least 3 characters"),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        // Create a GROUP_CREATE decision
+        const decision = await createDecision({
+          type: "GROUP_CREATE",
+          subject: `Create Group: ${input.name}`,
+          policyCode: "GRP-001",
+          risk: "MEDIUM",
+          requiredAuthority: "PLATFORM_ADMIN",
+          status: "PENDING",
+          slaDeadline: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours
+          groupContext: JSON.stringify({ name: input.name }),
+        });
+        
+        return { success: true, decisionId: decision.decisionId };
+      }),
+
+    // POST /groups/{id}/add-entity - Request to add entity to group
+    // This creates a GROUP_ADD_ENTITY decision that must be approved
+    addEntity: adminProcedure
+      .input(z.object({
+        groupId: z.number(),
+        entityId: z.number(),
+        reason: z.string().min(10, "Reason must be at least 10 characters"),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const group = await getGroupById(input.groupId);
+        const entity = await getEntityById(input.entityId);
+        
+        if (!group) throw new Error("Group not found");
+        if (!entity) throw new Error("Entity not found");
+        
+        // Create a GROUP_ADD_ENTITY decision
+        const decision = await createDecision({
+          type: "GROUP_ADD_ENTITY",
+          subject: `Add ${entity.legalName} to ${group.name}`,
+          policyCode: "GRP-002",
+          risk: "MEDIUM",
+          requiredAuthority: "PLATFORM_ADMIN",
+          status: "PENDING",
+          slaDeadline: new Date(Date.now() + 24 * 60 * 60 * 1000),
+          groupId: input.groupId,
+          entityId: input.entityId,
+          groupContext: JSON.stringify({
+            targetEntityId: input.entityId,
+            targetEntityLegalName: entity.legalName,
+            reason: input.reason,
+          }),
+        });
+        
+        return { success: true, decisionId: decision.decisionId };
+      }),
+
+    // POST /groups/{id}/remove-entity - Request to remove entity from group
+    // This creates a GROUP_REMOVE_ENTITY decision that must be approved
+    removeEntity: adminProcedure
+      .input(z.object({
+        groupId: z.number(),
+        entityId: z.number(),
+        reason: z.string().min(10, "Reason must be at least 10 characters"),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const group = await getGroupById(input.groupId);
+        const entity = await getEntityById(input.entityId);
+        
+        if (!group) throw new Error("Group not found");
+        if (!entity) throw new Error("Entity not found");
+        
+        // Create a GROUP_REMOVE_ENTITY decision
+        const decision = await createDecision({
+          type: "GROUP_REMOVE_ENTITY",
+          subject: `Remove ${entity.legalName} from ${group.name}`,
+          policyCode: "GRP-003",
+          risk: "HIGH",
+          requiredAuthority: "PLATFORM_ADMIN",
+          status: "PENDING",
+          slaDeadline: new Date(Date.now() + 24 * 60 * 60 * 1000),
+          groupId: input.groupId,
+          entityId: input.entityId,
+          groupContext: JSON.stringify({
+            targetEntityId: input.entityId,
+            targetEntityLegalName: entity.legalName,
+            reason: input.reason,
+          }),
+        });
+        
+        return { success: true, decisionId: decision.decisionId };
       }),
   }),
 });

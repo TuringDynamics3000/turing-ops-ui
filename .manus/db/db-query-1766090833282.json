@@ -1,0 +1,9 @@
+{
+  "query": "CREATE TABLE IF NOT EXISTS group_user_roles (\n  id INT AUTO_INCREMENT PRIMARY KEY,\n  groupId INT NOT NULL,\n  userId INT NOT NULL,\n  role ENUM('GROUP_ADMIN', 'GROUP_FINANCE', 'GROUP_VIEWER') NOT NULL,\n  createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,\n  UNIQUE KEY unique_group_user_role (groupId, userId, role)\n);",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user zFXp9RNvPn4ZSGY.f4c672cde8f4 --database AKEywqHrvuBg7Sz2tPDLPz --execute CREATE TABLE IF NOT EXISTS group_user_roles (\n  id INT AUTO_INCREMENT PRIMARY KEY,\n  groupId INT NOT NULL,\n  userId INT NOT NULL,\n  role ENUM('GROUP_ADMIN', 'GROUP_FINANCE', 'GROUP_VIEWER') NOT NULL,\n  createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,\n  UNIQUE KEY unique_group_user_role (groupId, userId, role)\n);",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 1742
+}

@@ -3,39 +3,22 @@ import { Badge } from "@/components/ui/badge";
 import { Explainer } from "@/components/ui/explainer";
 import { EXPLAINER_CONTENT } from "@/lib/explainer-content";
 import { DecisionActions } from "./DecisionActions";
-import { Shield, Clock, FileText, Activity } from "lucide-react";
-
-// Database Decision type from API
-interface DbDecision {
-  id: number;
-  decisionId: string;
-  type: "PAYMENT" | "LIMIT_OVERRIDE" | "AML_EXCEPTION" | "POLICY_CHANGE";
-  subject: string;
-  policyCode: string;
-  risk: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
-  requiredAuthority: "SUPERVISOR" | "COMPLIANCE" | "DUAL";
-  status: "PENDING" | "APPROVED" | "REJECTED" | "ESCALATED" | "EXECUTED";
-  slaDeadline: Date;
-  amount: string | null;
-  beneficiary: string | null;
-  context: string | null;
-  decidedAt: Date | null;
-  decidedBy: string | null;
-  justification: string | null;
-  executionRef: string | null;
-  createdAt: Date;
-  updatedAt: Date;
-}
+import { Shield, Clock, FileText, Activity, Building2, Users } from "lucide-react";
+import type { DbDecision } from "@shared/decision-types";
+import { isGroupDecisionType, getDecisionTypeDisplayName } from "@shared/decision-types";
 
 interface DecisionCardProps {
   decision: DbDecision;
+  entityLegalName?: string;
+  groupName?: string;
 }
 
-export function DecisionCard({ decision }: DecisionCardProps) {
+export function DecisionCard({ decision, entityLegalName, groupName }: DecisionCardProps) {
   // Calculate SLA seconds remaining
   const now = new Date();
   const deadline = new Date(decision.slaDeadline);
   const slaSecondsRemaining = Math.max(0, Math.floor((deadline.getTime() - now.getTime()) / 1000));
+  const isGroupDecision = isGroupDecisionType(decision.type);
 
   // Format SLA time
   const formatSla = (seconds: number) => {
@@ -43,6 +26,9 @@ export function DecisionCard({ decision }: DecisionCardProps) {
     const secs = seconds % 60;
     return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
   };
+
+  // Parse group context if present
+  const groupContext = decision.groupContext ? JSON.parse(decision.groupContext) : null;
 
   return (
     <div className="max-w-4xl mx-auto space-y-6 animate-in slide-in-from-bottom-4 duration-500">
@@ -89,6 +75,11 @@ export function DecisionCard({ decision }: DecisionCardProps) {
                   {decision.status}
                 </Badge>
               </Explainer>
+              
+              {/* Decision Type Badge */}
+              <Badge variant="outline" className={`font-mono text-xs border-zinc-700 ${isGroupDecision ? 'text-blue-400 bg-blue-950/30' : 'text-zinc-400'}`}>
+                {getDecisionTypeDisplayName(decision.type)}
+              </Badge>
             </div>
             <h1 className="text-2xl font-bold text-white mb-2">{decision.subject}</h1>
             <div className="flex items-center gap-6 text-sm text-zinc-400">
@@ -98,6 +89,55 @@ export function DecisionCard({ decision }: DecisionCardProps) {
                   <span>Policy: <span className="text-zinc-200 font-mono">{decision.policyCode}</span></span>
                 </div>
               </Explainer>
+              
+              {/* Entity Context - Always show if available */}
+              {entityLegalName && (
+                <Explainer
+                  title="Entity Context"
+                  description="This decision is anchored to a specific legal entity. Entity authority is required for approval - group scope never implies entity authority."
+                  advantages={[
+                    "Decisions always anchored to legal entity",
+                    "Entity authority required for approval",
+                    "Group scope is informational only",
+                  ]}
+                  legacyComparison={{
+                    legacy: "Entity context often implicit. Group-level approvals may bypass entity-level controls.",
+                    turing: "Entity is always explicit. Group consolidation never grants entity authority.",
+                  }}
+                  side="bottom"
+                  showIcon={false}
+                >
+                  <div className="flex items-center gap-2 cursor-help">
+                    <Building2 className="h-4 w-4 text-cyan-500" />
+                    <span>Entity: <span className="text-cyan-300 font-mono">{entityLegalName}</span></span>
+                  </div>
+                </Explainer>
+              )}
+              
+              {/* Group Context - Show if this is a group-scoped decision */}
+              {groupName && (
+                <Explainer
+                  title="Group Context"
+                  description="This decision is being viewed in a group context. Group scope provides consolidated visibility but does not grant entity authority."
+                  advantages={[
+                    "Group context is informational only",
+                    "No bulk actions across entity boundaries",
+                    "Each entity decision requires entity authority",
+                  ]}
+                  legacyComparison={{
+                    legacy: "Group views may enable bulk operations across entities without explicit per-entity authorization.",
+                    turing: "Group consolidation is read-only. Every action requires explicit entity-level authority.",
+                  }}
+                  side="bottom"
+                  showIcon={false}
+                >
+                  <div className="flex items-center gap-2 cursor-help">
+                    <Users className="h-4 w-4 text-blue-500" />
+                    <span>Group: <span className="text-blue-300 font-mono">{groupName}</span></span>
+                  </div>
+                </Explainer>
+              )}
+              
               <Explainer
                 title="Decision Creation Timestamp"
                 description="Exact time when this decision was created. All context data is frozen at this moment and cannot be modified."
@@ -153,9 +193,10 @@ export function DecisionCard({ decision }: DecisionCardProps) {
           <Explainer {...EXPLAINER_CONTENT.transactionContext} side="left" showIcon={false}>
             <div className="p-6 col-span-2 cursor-help">
               <h3 className="text-xs font-bold text-zinc-500 uppercase tracking-wider mb-4 flex items-center gap-2">
-                <FileText className="h-3 w-3" /> Transaction Details
+                <FileText className="h-3 w-3" /> {isGroupDecision ? 'Group Operation Details' : 'Transaction Details'}
               </h3>
               <div className="grid grid-cols-2 gap-6">
+                {/* Standard transaction fields */}
                 {decision.amount && (
                   <div>
                     <div className="text-xs text-zinc-500 mb-1">Amount</div>
@@ -168,10 +209,41 @@ export function DecisionCard({ decision }: DecisionCardProps) {
                     <div className="text-lg text-white">{decision.beneficiary}</div>
                   </div>
                 )}
+                
+                {/* Group-specific context fields */}
+                {isGroupDecision && groupContext && (
+                  <>
+                    {groupContext.name && (
+                      <div>
+                        <div className="text-xs text-zinc-500 mb-1">Group Name</div>
+                        <div className="text-lg text-white font-mono">{groupContext.name}</div>
+                      </div>
+                    )}
+                    {groupContext.targetEntityLegalName && (
+                      <div>
+                        <div className="text-xs text-zinc-500 mb-1">Target Entity</div>
+                        <div className="text-lg text-white">{groupContext.targetEntityLegalName}</div>
+                      </div>
+                    )}
+                    {groupContext.targetUserName && (
+                      <div>
+                        <div className="text-xs text-zinc-500 mb-1">Target User</div>
+                        <div className="text-lg text-white">{groupContext.targetUserName}</div>
+                      </div>
+                    )}
+                    {groupContext.targetRole && (
+                      <div>
+                        <div className="text-xs text-zinc-500 mb-1">Target Role</div>
+                        <div className="text-lg text-white font-mono">{groupContext.targetRole}</div>
+                      </div>
+                    )}
+                  </>
+                )}
+                
                 <div className="col-span-2">
                   <div className="text-xs text-zinc-500 mb-1">Context</div>
                   <p className="text-sm text-zinc-300 leading-relaxed">
-                    {decision.context || `Transaction flagged by rule ${decision.policyCode}. Review required based on policy parameters.`}
+                    {decision.context || groupContext?.reason || `Transaction flagged by rule ${decision.policyCode}. Review required based on policy parameters.`}
                   </p>
                 </div>
               </div>

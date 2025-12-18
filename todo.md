@@ -75,3 +75,54 @@
 - [x] Include variety of entry types (CREDIT, DEBIT)
 - [x] Add realistic counterparties and amounts
 - [x] Include integrity verification indicators
+
+
+## Multi-Entity Consolidation (Production Build Pack)
+### Database Schema
+- [x] Create entities table (id, legal_name, status, created_at)
+- [x] Create groups table (id, name, status, created_by, created_at)
+- [x] Create group_memberships table (id, group_id, entity_id, status, activated_at, revoked_at)
+- [x] Create group_user_roles table (id, group_id, user_id, role)
+- [x] Add entity_id column to decisions table (mandatory)
+- [x] Add group_id column to decisions table (optional, contextual)
+- [x] Create required indexes for performance
+
+### Auth Middleware
+- [x] Implement AuthContext interface (entityScopes, groupScopes, entityRoles, groupRoles)
+- [x] Implement resolveAuthContext function
+- [x] Implement hasEntityAuthority function (group scope never implies entity authority)
+- [x] Implement getVisibleEntityIds function
+- [x] Implement getActionableEntityIds function
+- [x] Implement validateDecisionAuthority function
+
+### Decision Types
+- [x] Add GROUP_CREATE decision type
+- [x] Add GROUP_ADD_ENTITY decision type
+- [x] Add GROUP_REMOVE_ENTITY decision type
+- [x] Add GROUP_ROLE_ASSIGN decision type
+
+### APIs
+- [x] Implement POST /entities for entity management
+- [x] Implement POST /groups for group creation (creates GROUP_CREATE decision)
+- [x] Implement POST /groups/{id}/add-entity (creates GROUP_ADD_ENTITY decision)
+- [x] Implement POST /groups/{id}/remove-entity (creates GROUP_REMOVE_ENTITY decision)
+- [x] Implement GET /groups/{id}/members with entity details
+
+### UI Components
+- [x] Implement Scope Selector in Header (Entity/Group dropdown)
+- [x] Implement Group Decision Inbox with entity legal_name column
+- [x] Update DecisionRow to show entity badge
+- [x] Implement scope-filtered inbox (platform/entity/group views)
+- [x] Add Group Consolidation Mode warning banner
+- [ ] Update Evidence Pack to include Group ID, Group Name, Affected Entity IDs
+
+### Seed Data
+- [x] Create demo entities (4 Australian companies: BHP, Rio Tinto, Woolworths, Telstra)
+- [x] Create demo group (Coastal Mining Group)
+- [x] Create demo group memberships (BHP and Rio Tinto in Coastal Group)
+- [x] Create demo decisions with entity_id populated
+
+### Tests
+- [x] Multi-entity database schema tests
+- [x] Seed data verification tests
+- [x] Authority context unit tests (hasEntityAuthority, getVisibleEntityIds, etc.)
