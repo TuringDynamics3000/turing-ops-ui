@@ -1,8 +1,10 @@
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Explainer } from "@/components/ui/explainer";
+import { EXPLAINER_CONTENT } from "@/lib/explainer-content";
 import { trpc } from "@/lib/trpc";
-import { FileJson, FileText, Download, Hash, ShieldCheck, UserCheck, Loader2, AlertCircle, CheckCircle2 } from "lucide-react";
+import { FileJson, FileText, Download, Hash, ShieldCheck, UserCheck, Loader2, AlertCircle, CheckCircle2, Info } from "lucide-react";
 import { toast } from "sonner";
 import { jsPDF } from "jspdf";
 
@@ -97,7 +99,7 @@ export function EvidencePack({ evidenceId }: EvidencePackProps) {
     doc.text("Risk Classification:", 20, y);
     doc.setFont("helvetica", "normal");
     doc.text("MEDIUM", 70, y);
-
+    
     y += 20;
     drawDivider(y);
     y += 15;
@@ -381,7 +383,12 @@ export function EvidencePack({ evidenceId }: EvidencePackProps) {
         <div>
           <h1 className="text-2xl font-bold text-white flex items-center gap-3">
             <ShieldCheck className="h-6 w-6 text-emerald-500" />
-            Evidence Pack
+            <Explainer content={EXPLAINER_CONTENT.immutableRecord}>
+              <span className="flex items-center gap-2">
+                Evidence Pack
+                <Info className="h-4 w-4 text-zinc-500" />
+              </span>
+            </Explainer>
           </h1>
           <p className="text-zinc-400 text-sm mt-1 font-mono">{evidence.evidenceId}</p>
         </div>
@@ -416,8 +423,13 @@ export function EvidencePack({ evidenceId }: EvidencePackProps) {
       <Card className="bg-zinc-900 border-zinc-800 p-8 space-y-8">
         {/* Chain of Custody */}
         <section>
-          <h3 className="text-xs font-bold text-zinc-500 uppercase tracking-wider mb-4 border-b border-zinc-800 pb-2">
-            Chain of Custody
+          <h3 className="text-xs font-bold text-zinc-500 uppercase tracking-wider mb-4 border-b border-zinc-800 pb-2 flex items-center gap-2">
+            <Explainer content={EXPLAINER_CONTENT.evidenceTimeline}>
+              <span className="flex items-center gap-2">
+                Chain of Custody
+                <Info className="h-3 w-3 text-zinc-600" />
+              </span>
+            </Explainer>
           </h3>
           <div className="grid grid-cols-2 gap-8">
             <div>
@@ -446,30 +458,39 @@ export function EvidencePack({ evidenceId }: EvidencePackProps) {
 
         {/* Decision Controls */}
         <section>
-          <h3 className="text-xs font-bold text-zinc-500 uppercase tracking-wider mb-4 border-b border-zinc-800 pb-2">
-            Decision Controls
+          <h3 className="text-xs font-bold text-zinc-500 uppercase tracking-wider mb-4 border-b border-zinc-800 pb-2 flex items-center gap-2">
+            <Explainer content={EXPLAINER_CONTENT.dualControlRule}>
+              <span className="flex items-center gap-2">
+                Decision Controls
+                <Info className="h-3 w-3 text-zinc-600" />
+              </span>
+            </Explainer>
           </h3>
           <div className="grid grid-cols-3 gap-4">
-            <div className="flex items-center gap-2">
-              {evidence.dualControlRequired ? (
-                <AlertCircle className="h-4 w-4 text-amber-500" />
-              ) : (
-                <CheckCircle2 className="h-4 w-4 text-zinc-500" />
-              )}
-              <span className="text-sm text-zinc-300">
-                Dual Control: {evidence.dualControlRequired ? "Required" : "Not Required"}
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              {evidence.escalationTriggered ? (
-                <AlertCircle className="h-4 w-4 text-amber-500" />
-              ) : (
-                <CheckCircle2 className="h-4 w-4 text-zinc-500" />
-              )}
-              <span className="text-sm text-zinc-300">
-                Escalation: {evidence.escalationTriggered ? "Triggered" : "Not Triggered"}
-              </span>
-            </div>
+            <Explainer content={EXPLAINER_CONTENT.dualControl}>
+              <div className="flex items-center gap-2 cursor-help">
+                {evidence.dualControlRequired ? (
+                  <AlertCircle className="h-4 w-4 text-amber-500" />
+                ) : (
+                  <CheckCircle2 className="h-4 w-4 text-zinc-500" />
+                )}
+                <span className="text-sm text-zinc-300">
+                  Dual Control: {evidence.dualControlRequired ? "Required" : "Not Required"}
+                </span>
+              </div>
+            </Explainer>
+            <Explainer content={EXPLAINER_CONTENT.escalationRate}>
+              <div className="flex items-center gap-2 cursor-help">
+                {evidence.escalationTriggered ? (
+                  <AlertCircle className="h-4 w-4 text-amber-500" />
+                ) : (
+                  <CheckCircle2 className="h-4 w-4 text-zinc-500" />
+                )}
+                <span className="text-sm text-zinc-300">
+                  Escalation: {evidence.escalationTriggered ? "Triggered" : "Not Triggered"}
+                </span>
+              </div>
+            </Explainer>
             <div className="flex items-center gap-2">
               {evidence.overrideApplied ? (
                 <AlertCircle className="h-4 w-4 text-rose-500" />
@@ -496,8 +517,13 @@ export function EvidencePack({ evidenceId }: EvidencePackProps) {
         {/* Execution Record */}
         {evidence.executionRef && (
           <section>
-            <h3 className="text-xs font-bold text-zinc-500 uppercase tracking-wider mb-4 border-b border-zinc-800 pb-2">
-              Execution Record
+            <h3 className="text-xs font-bold text-zinc-500 uppercase tracking-wider mb-4 border-b border-zinc-800 pb-2 flex items-center gap-2">
+              <Explainer content={EXPLAINER_CONTENT.executionRef}>
+                <span className="flex items-center gap-2">
+                  Execution Record
+                  <Info className="h-3 w-3 text-zinc-600" />
+                </span>
+              </Explainer>
             </h3>
             <div className="grid grid-cols-2 gap-6">
               <div>
@@ -530,8 +556,13 @@ export function EvidencePack({ evidenceId }: EvidencePackProps) {
 
         {/* Cryptographic Proof */}
         <section>
-          <h3 className="text-xs font-bold text-zinc-500 uppercase tracking-wider mb-4 border-b border-zinc-800 pb-2">
-            Cryptographic Proof
+          <h3 className="text-xs font-bold text-zinc-500 uppercase tracking-wider mb-4 border-b border-zinc-800 pb-2 flex items-center gap-2">
+            <Explainer content={EXPLAINER_CONTENT.evidenceHash}>
+              <span className="flex items-center gap-2">
+                Cryptographic Proof
+                <Info className="h-3 w-3 text-zinc-600" />
+              </span>
+            </Explainer>
           </h3>
           <div className="space-y-4">
             <div>
@@ -540,6 +571,11 @@ export function EvidencePack({ evidenceId }: EvidencePackProps) {
                 <Hash className="h-3 w-3 shrink-0" />
                 {evidence.merkleHash}
               </div>
+            </div>
+            <div className="text-xs text-zinc-600 italic">
+              This hash can be independently verified to prove the evidence has not been tampered with. 
+              Unlike legacy systems where audit logs can be modified by administrators, Turing Evidence Packs 
+              are cryptographically sealed and tamper-evident.
             </div>
           </div>
         </section>

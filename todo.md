@@ -46,3 +46,16 @@
 - [x] Add "Propose Authority Change" button linking to Decision creation flow
 - [x] Remove all edit affordances (no toggles, modals, save buttons)
 - [x] Verify enforcement alignment (runtime, API, UI all use same source)
+
+
+## Hover Explainers (Competitive Differentiation)
+
+- [x] Create reusable Explainer tooltip component with rich content support
+- [x] Add explainers to Executive Overview (Live Operations, Decision Governance metrics)
+- [x] Add explainers to Decision Inbox (SLA, Risk indicators, Authority requirements)
+- [x] Add explainers to Decision Card (Transaction context, Risk profile, Evidence generation)
+- [x] Add explainers to Authority Matrix (Version control, Hash verification, Dual control)
+- [x] Add explainers to Configuration (Policy definitions, Visibility matrix)
+- [x] Add explainers to State Explorers (Payments, Ledger, Risk)
+- [x] Add explainers to Evidence Pack (Immutability, Cryptographic proof, Audit trail)
+- [x] Ensure all explainers highlight advantages over Constantinople and Thought Machine

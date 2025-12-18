@@ -16,6 +16,8 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
+import { Explainer } from "@/components/ui/explainer";
+import { EXPLAINER_CONTENT } from "@/lib/explainer-content";
 import { 
   Search, 
   Filter, 
@@ -25,7 +27,10 @@ import {
   XCircle,
   AlertTriangle,
   ExternalLink,
-  Plus
+  Plus,
+  CreditCard,
+  Shield,
+  Info
 } from "lucide-react";
 import { Link } from "wouter";
 
@@ -142,11 +147,33 @@ export default function PaymentsExplorerPage() {
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight text-white">Payments Explorer</h1>
-        <p className="text-zinc-400 text-sm mt-1">
-          Read-only view of payment state. All fixes route through Decision Inbox.
-        </p>
+      <div className="flex items-start justify-between">
+        <div>
+          <div className="flex items-center gap-3">
+            <CreditCard className="h-7 w-7 text-orange-500" />
+            <h1 className="text-2xl font-bold tracking-tight text-white">Payments Explorer</h1>
+<Explainer
+              title="Read-Only State Explorer"
+              description="This explorer provides a read-only view of payment state. Unlike traditional admin panels, you cannot modify payments directly here. All fixes must route through the Decision Inbox."
+              advantages={[
+                "Enforces governance - no backdoor edits",
+                "Every change produces an Evidence Pack",
+                "Audit trail is complete and unbroken",
+              ]}
+              legacyComparison={{
+                legacy: "Admin panels allow direct database edits. Changes may bypass approval workflows and audit logging.",
+                turing: "Read-only explorers with decision routing. Every state change is a governed decision with evidence.",
+              }}
+              side="bottom"
+              showIcon={false}
+            >
+              <Info className="h-4 w-4 text-zinc-500 hover:text-orange-500 cursor-help transition-colors" />
+            </Explainer>
+          </div>
+          <p className="text-zinc-400 text-sm mt-1">
+            Read-only view of payment state. All fixes route through Decision Inbox.
+          </p>
+        </div>
       </div>
 
       {/* Filters */}
@@ -193,65 +220,120 @@ export default function PaymentsExplorerPage() {
       </Card>
 
       {/* Payments Table */}
-      <Card className="bg-zinc-900/50 border-zinc-800 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-zinc-800 text-left">
-                <th className="px-4 py-3 text-xs font-bold text-zinc-500 uppercase tracking-wider">Reference</th>
-                <th className="px-4 py-3 text-xs font-bold text-zinc-500 uppercase tracking-wider">Created</th>
-                <th className="px-4 py-3 text-xs font-bold text-zinc-500 uppercase tracking-wider">Status</th>
-                <th className="px-4 py-3 text-xs font-bold text-zinc-500 uppercase tracking-wider">Rail</th>
-                <th className="px-4 py-3 text-xs font-bold text-zinc-500 uppercase tracking-wider">Amount</th>
-                <th className="px-4 py-3 text-xs font-bold text-zinc-500 uppercase tracking-wider">Counterparty</th>
-                <th className="px-4 py-3 text-xs font-bold text-zinc-500 uppercase tracking-wider">Policy</th>
-                <th className="px-4 py-3 text-xs font-bold text-zinc-500 uppercase tracking-wider">Action</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-zinc-800">
-              {filteredPayments.map((payment) => (
-                <tr 
-                  key={payment.paymentRef} 
-                  className="hover:bg-zinc-800/50 cursor-pointer transition-colors"
-                  onClick={() => setSelectedPayment(payment)}
-                >
-                  <td className="px-4 py-3">
-                    <span className="font-mono text-sm text-white">{payment.paymentRef}</span>
-                  </td>
-                  <td className="px-4 py-3 text-sm text-zinc-400">
-                    {formatTime(payment.createdAt)}
-                  </td>
-                  <td className="px-4 py-3">
-                    <StatusBadge status={payment.status} />
-                  </td>
-                  <td className="px-4 py-3 text-sm text-zinc-400">{payment.rail}</td>
-                  <td className="px-4 py-3 text-sm text-white font-medium">
-                    ${payment.amount.toLocaleString()} {payment.currency}
-                  </td>
-                  <td className="px-4 py-3 text-sm text-zinc-300">{payment.counterparty}</td>
-                  <td className="px-4 py-3">
-                    {payment.policyFlag ? (
-                      <Badge variant="outline" className="border-amber-700 text-amber-400 font-mono text-xs">
-                        {payment.policyFlag}
-                      </Badge>
-                    ) : (
-                      <span className="text-zinc-600">—</span>
-                    )}
-                  </td>
-                  <td className="px-4 py-3">
-                    <PaymentAction payment={payment} />
-                  </td>
+      <Explainer {...EXPLAINER_CONTENT.paymentRouting} side="top" showIcon={false}>
+        <Card className="bg-zinc-900/50 border-zinc-800 overflow-hidden cursor-help">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-zinc-800 text-left">
+                  <th className="px-4 py-3 text-xs font-bold text-zinc-500 uppercase tracking-wider">Reference</th>
+                  <th className="px-4 py-3 text-xs font-bold text-zinc-500 uppercase tracking-wider">Created</th>
+                  <th className="px-4 py-3 text-xs font-bold text-zinc-500 uppercase tracking-wider">
+<Explainer
+                      title="Payment Status"
+                      description="Real-time status of the payment in its lifecycle. Blocked payments require a governed decision to proceed."
+                      advantages={[
+                        "Status changes are governance events",
+                        "Blocked payments cannot proceed without decision",
+                        "Every status transition is logged with evidence",
+                      ]}
+                      legacyComparison={{
+                        legacy: "Status changes often made by operations staff directly. May not require approval or produce audit trail.",
+                        turing: "Status is controlled by governance layer. Blocked → Posted requires a decision with evidence.",
+                      }}
+                      side="bottom"
+                      showIcon={false}
+                    >
+                      <span className="cursor-help">Status</span>
+                    </Explainer>
+                  </th>
+                  <th className="px-4 py-3 text-xs font-bold text-zinc-500 uppercase tracking-wider">Rail</th>
+                  <th className="px-4 py-3 text-xs font-bold text-zinc-500 uppercase tracking-wider">Amount</th>
+                  <th className="px-4 py-3 text-xs font-bold text-zinc-500 uppercase tracking-wider">Counterparty</th>
+                  <th className="px-4 py-3 text-xs font-bold text-zinc-500 uppercase tracking-wider">
+                    <Explainer {...EXPLAINER_CONTENT.policyDefinition} side="bottom" showIcon={false}>
+                      <span className="cursor-help">Policy</span>
+                    </Explainer>
+                  </th>
+                  <th className="px-4 py-3 text-xs font-bold text-zinc-500 uppercase tracking-wider">Action</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        {filteredPayments.length === 0 && (
-          <div className="p-8 text-center text-zinc-500">
-            No payments match your filters
+              </thead>
+              <tbody className="divide-y divide-zinc-800">
+                {filteredPayments.map((payment) => (
+                  <tr 
+                    key={payment.paymentRef} 
+                    className="hover:bg-zinc-800/50 cursor-pointer transition-colors"
+                    onClick={() => setSelectedPayment(payment)}
+                  >
+                    <td className="px-4 py-3">
+                      <span className="font-mono text-sm text-white">{payment.paymentRef}</span>
+                    </td>
+                    <td className="px-4 py-3 text-sm text-zinc-400">
+                      {formatTime(payment.createdAt)}
+                    </td>
+                    <td className="px-4 py-3">
+                      <StatusBadge status={payment.status} />
+                    </td>
+                    <td className="px-4 py-3 text-sm text-zinc-400">{payment.rail}</td>
+                    <td className="px-4 py-3 text-sm text-white font-medium">
+                      ${payment.amount.toLocaleString()} {payment.currency}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-zinc-300">{payment.counterparty}</td>
+                    <td className="px-4 py-3">
+                      {payment.policyFlag ? (
+                        <Badge variant="outline" className="border-amber-700 text-amber-400 font-mono text-xs">
+                          {payment.policyFlag}
+                        </Badge>
+                      ) : (
+                        <span className="text-zinc-600">—</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3">
+                      <PaymentAction payment={payment} />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
-        )}
-      </Card>
+          {filteredPayments.length === 0 && (
+            <div className="p-8 text-center text-zinc-500">
+              No payments match your filters
+            </div>
+          )}
+        </Card>
+      </Explainer>
+
+      {/* Governance Notice */}
+      <Explainer
+        title="Decision-Linked Payments"
+        description="Every blocked payment links directly to its governing decision. This creates an unbroken audit trail from payment request to final execution."
+        advantages={[
+          "One-click navigation from payment to decision",
+          "No manual correlation required for audits",
+          "Complete traceability without separate systems",
+        ]}
+        legacyComparison={{
+          legacy: "Payments and approvals in separate systems. Audit requires manual correlation using reference numbers across multiple databases.",
+          turing: "Unified data model - payments, decisions, and evidence linked by design. Any record leads to complete context.",
+        }}
+        side="top"
+        showIcon={false}
+      >
+        <div className="bg-zinc-900/30 border border-zinc-800 rounded-lg p-4 cursor-help">
+          <div className="flex items-start gap-3">
+            <Shield className="h-5 w-5 text-orange-500 mt-0.5" />
+            <div>
+              <h3 className="text-sm font-semibold text-zinc-200 mb-1">Governance-First Architecture</h3>
+              <p className="text-xs text-zinc-500">
+                Blocked payments cannot be released by editing the database. Every state change routes through the Decision Inbox,
+                producing an immutable Evidence Pack. This is fundamentally different from legacy systems where ops staff can
+                directly modify payment status.
+              </p>
+            </div>
+          </div>
+        </div>
+      </Explainer>
 
       {/* Payment Detail Drawer */}
       <Sheet open={!!selectedPayment} onOpenChange={() => setSelectedPayment(null)}>
@@ -278,32 +360,36 @@ export default function PaymentsExplorerPage() {
                 </div>
 
                 {/* Lifecycle Timeline */}
-                <div>
-                  <p className="text-xs text-zinc-500 uppercase tracking-wider mb-3">Lifecycle</p>
-                  <div className="space-y-3">
-                    {selectedPayment.lifecycle.map((event, i) => (
-                      <div key={i} className="flex items-start gap-3">
-                        <div className="w-2 h-2 rounded-full bg-orange-500 mt-1.5"></div>
-                        <div className="flex-1">
-                          <div className="flex items-center justify-between">
-                            <span className="text-sm text-white font-medium">{event.event}</span>
-                            <span className="text-xs text-zinc-500">{formatTime(event.timestamp)}</span>
+                <Explainer {...EXPLAINER_CONTENT.evidenceTimeline} side="left" showIcon={false}>
+                  <div className="cursor-help">
+                    <p className="text-xs text-zinc-500 uppercase tracking-wider mb-3">Lifecycle</p>
+                    <div className="space-y-3">
+                      {selectedPayment.lifecycle.map((event, i) => (
+                        <div key={i} className="flex items-start gap-3">
+                          <div className="w-2 h-2 rounded-full bg-orange-500 mt-1.5"></div>
+                          <div className="flex-1">
+                            <div className="flex items-center justify-between">
+                              <span className="text-sm text-white font-medium">{event.event}</span>
+                              <span className="text-xs text-zinc-500">{formatTime(event.timestamp)}</span>
+                            </div>
+                            <p className="text-xs text-zinc-400">{event.actor}</p>
                           </div>
-                          <p className="text-xs text-zinc-400">{event.actor}</p>
                         </div>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
                   </div>
-                </div>
+                </Explainer>
 
                 {/* Policy Triggers */}
                 {selectedPayment.policyFlag && (
-                  <div>
-                    <p className="text-xs text-zinc-500 uppercase tracking-wider mb-3">Policy Triggers</p>
-                    <Badge variant="outline" className="border-amber-700 text-amber-400 font-mono">
-                      {selectedPayment.policyFlag}
-                    </Badge>
-                  </div>
+                  <Explainer {...EXPLAINER_CONTENT.policyDefinition} side="left" showIcon={false}>
+                    <div className="cursor-help">
+                      <p className="text-xs text-zinc-500 uppercase tracking-wider mb-3">Policy Triggers</p>
+                      <Badge variant="outline" className="border-amber-700 text-amber-400 font-mono">
+                        {selectedPayment.policyFlag}
+                      </Badge>
+                    </div>
+                  </Explainer>
                 )}
 
                 {/* Linked Decision */}
@@ -321,18 +407,36 @@ export default function PaymentsExplorerPage() {
 
                 {/* Execution Reference */}
                 {selectedPayment.executionRef && (
-                  <div>
-                    <p className="text-xs text-zinc-500 uppercase tracking-wider mb-3">Execution Reference</p>
-                    <p className="font-mono text-sm text-zinc-300">{selectedPayment.executionRef}</p>
-                  </div>
+                  <Explainer
+                    title="Execution Reference"
+                    description="The reference from the payment rail confirming execution. This links the governance decision to the actual settlement."
+                    advantages={[
+                      "End-to-end traceability from decision to settlement",
+                      "Execution reference sealed in Evidence Pack",
+                      "Enables reconciliation with external systems",
+                    ]}
+                    legacyComparison={{
+                      legacy: "Execution references stored separately. Manual correlation required between approval and settlement.",
+                      turing: "Execution reference captured in Evidence Pack. Complete chain from decision to settlement in one record.",
+                    }}
+                    side="left"
+                    showIcon={false}
+                  >
+                    <div className="cursor-help">
+                      <p className="text-xs text-zinc-500 uppercase tracking-wider mb-3">Execution Reference</p>
+                      <p className="font-mono text-sm text-zinc-300">{selectedPayment.executionRef}</p>
+                    </div>
+                  </Explainer>
                 )}
 
                 {/* Failure Reason */}
                 {selectedPayment.failureReason && (
-                  <div className="bg-rose-900/20 border border-rose-800 rounded-lg p-4">
-                    <p className="text-xs text-rose-400 uppercase tracking-wider mb-1">Failure Reason</p>
-                    <p className="text-sm text-rose-300">{selectedPayment.failureReason}</p>
-                  </div>
+                  <Explainer {...EXPLAINER_CONTENT.failureRate} side="left" showIcon={false}>
+                    <div className="bg-rose-900/20 border border-rose-800 rounded-lg p-4 cursor-help">
+                      <p className="text-xs text-rose-400 uppercase tracking-wider mb-1">Failure Reason</p>
+                      <p className="text-sm text-rose-300">{selectedPayment.failureReason}</p>
+                    </div>
+                  </Explainer>
                 )}
 
                 {/* Action CTA */}
@@ -425,15 +529,17 @@ function PaymentAction({ payment }: { payment: Payment }) {
 function PaymentActionFull({ payment }: { payment: Payment }) {
   if (payment.status === "BLOCKED" && !payment.decisionId) {
     return (
-      <div className="space-y-2">
-        <p className="text-xs text-zinc-500">This payment is blocked by policy. Create a decision to resolve.</p>
-        <Link href="/inbox">
-          <Button className="w-full bg-orange-600 hover:bg-orange-700 text-white">
-            <Plus className="h-4 w-4 mr-2" />
-            Create Decision (PAYMENT)
-          </Button>
-        </Link>
-      </div>
+      <Explainer {...EXPLAINER_CONTENT.decisionActions} side="top" showIcon={false}>
+        <div className="space-y-2 cursor-help">
+          <p className="text-xs text-zinc-500">This payment is blocked by policy. Create a decision to resolve.</p>
+          <Link href="/inbox">
+            <Button className="w-full bg-orange-600 hover:bg-orange-700 text-white">
+              <Plus className="h-4 w-4 mr-2" />
+              Create Decision (PAYMENT)
+            </Button>
+          </Link>
+        </div>
+      </Explainer>
     );
   }
 

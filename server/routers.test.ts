@@ -224,3 +224,92 @@ describe("Authority Matrix Enforcement Alignment", () => {
     });
   });
 });
+
+
+// ============================================
+// EXPLAINER CONTENT TESTS
+// ============================================
+// These tests verify that all required explainer content exists
+// and contains the necessary fields for competitive differentiation
+
+import { EXPLAINER_CONTENT } from "../client/src/lib/explainer-content";
+
+describe("Explainer Content", () => {
+  const requiredExplainers = [
+    "paymentsToday",
+    "successRate",
+    "failureRate",
+    "processingLatency",
+    "decisionsPending",
+    "timeToDecision",
+    "escalationRate",
+    "dualControlCompliance",
+    "slaIndicator",
+    "riskIndicator",
+    "authorityBadge",
+    "transactionContext",
+    "riskProfile",
+    "decisionActions",
+    "authorityHash",
+    "dualControlRule",
+    "authorityVersion",
+    "evidenceHash",
+    "immutableRecord",
+    "evidenceTimeline",
+    "ledgerIntegrity",
+    "paymentRouting",
+    "riskExposure",
+    "policyDefinition",
+    "visibilityMatrix",
+    "authorityMatrix",
+    "hashVerification",
+    "dualControl",
+    "enforcementAlignment",
+    "executionRef",
+  ];
+
+  it("should have all required explainer entries", () => {
+    requiredExplainers.forEach(key => {
+      expect(EXPLAINER_CONTENT).toHaveProperty(key);
+    });
+  });
+
+  it("each explainer should have title, description, and legacyComparison", () => {
+    Object.entries(EXPLAINER_CONTENT).forEach(([key, content]) => {
+      expect(content).toHaveProperty("title");
+      expect(content).toHaveProperty("description");
+      expect(content).toHaveProperty("legacyComparison");
+      expect(content.legacyComparison).toHaveProperty("legacy");
+      expect(content.legacyComparison).toHaveProperty("turing");
+    });
+  });
+
+  it("each explainer should have at least one advantage", () => {
+    Object.entries(EXPLAINER_CONTENT).forEach(([key, content]) => {
+      expect(content).toHaveProperty("advantages");
+      expect(Array.isArray(content.advantages)).toBe(true);
+      expect(content.advantages.length).toBeGreaterThan(0);
+    });
+  });
+
+  it("legacy comparisons should mention Constantinople or Thought Machine concepts", () => {
+    // At least some explainers should reference legacy system patterns
+    const legacyReferences = Object.values(EXPLAINER_CONTENT).filter(content => 
+      content.legacyComparison.legacy.toLowerCase().includes("batch") ||
+      content.legacyComparison.legacy.toLowerCase().includes("workflow") ||
+      content.legacyComparison.legacy.toLowerCase().includes("manual") ||
+      content.legacyComparison.legacy.toLowerCase().includes("admin")
+    );
+    expect(legacyReferences.length).toBeGreaterThan(10);
+  });
+
+  it("Turing comparisons should highlight cryptographic or real-time advantages", () => {
+    const turingAdvantages = Object.values(EXPLAINER_CONTENT).filter(content =>
+      content.legacyComparison.turing.toLowerCase().includes("cryptographic") ||
+      content.legacyComparison.turing.toLowerCase().includes("real-time") ||
+      content.legacyComparison.turing.toLowerCase().includes("immutable") ||
+      content.legacyComparison.turing.toLowerCase().includes("evidence")
+    );
+    expect(turingAdvantages.length).toBeGreaterThan(10);
+  });
+});

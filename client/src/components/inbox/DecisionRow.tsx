@@ -2,6 +2,8 @@ import { Link } from "wouter";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Explainer } from "@/components/ui/explainer";
+import { EXPLAINER_CONTENT } from "@/lib/explainer-content";
 import { cn } from "@/lib/utils";
 import { AlertTriangle, Clock, ArrowRight } from "lucide-react";
 
@@ -56,25 +58,43 @@ export function DecisionRow({ decision }: DecisionRowProps) {
         {/* Left: Info */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-3 mb-2">
-            <Badge variant="outline" className={cn(
-              "font-mono text-[10px] tracking-wider uppercase rounded-sm px-1.5 py-0.5 border-zinc-700",
-              decision.type === "PAYMENT" && "text-emerald-400 bg-emerald-950/30",
-              decision.type === "LIMIT_OVERRIDE" && "text-amber-400 bg-amber-950/30",
-              decision.type === "AML_EXCEPTION" && "text-rose-400 bg-rose-950/30",
-              decision.type === "POLICY_CHANGE" && "text-purple-400 bg-purple-950/30"
-            )}>
-              {decision.type.replace("_", " ")}
-            </Badge>
+            <Explainer
+              title="Decision Type"
+              description={`This is a ${decision.type.replace("_", " ")} decision. Each type has specific authority requirements and evidence generation rules defined in the Authority Matrix.`}
+              advantages={[
+                "Decision types are policy-defined, not hardcoded",
+                "Each type maps to specific authority requirements",
+                "Type determines evidence pack structure",
+              ]}
+              legacyComparison={{
+                legacy: "Decision types often implicit in workflow names. No formal mapping to authority or evidence requirements.",
+                turing: "Decision types are first-class governance concepts with explicit authority and evidence bindings.",
+              }}
+              side="bottom"
+              showIcon={false}
+            >
+              <Badge variant="outline" className={cn(
+                "font-mono text-[10px] tracking-wider uppercase rounded-sm px-1.5 py-0.5 border-zinc-700",
+                decision.type === "PAYMENT" && "text-emerald-400 bg-emerald-950/30",
+                decision.type === "LIMIT_OVERRIDE" && "text-amber-400 bg-amber-950/30",
+                decision.type === "AML_EXCEPTION" && "text-rose-400 bg-rose-950/30",
+                decision.type === "POLICY_CHANGE" && "text-purple-400 bg-purple-950/30"
+              )}>
+                {decision.type.replace("_", " ")}
+              </Badge>
+            </Explainer>
             
             <span className="text-xs text-zinc-500 font-mono">
               {decision.decisionId}
             </span>
 
             {isCritical && (
-              <div className="flex items-center gap-1 text-orange-500 text-xs font-bold uppercase tracking-wider animate-pulse">
-                <AlertTriangle className="h-3 w-3" />
-                <span>Risk: {decision.risk}</span>
-              </div>
+              <Explainer {...EXPLAINER_CONTENT.riskIndicator} side="bottom" showIcon={false}>
+                <div className="flex items-center gap-1 text-orange-500 text-xs font-bold uppercase tracking-wider animate-pulse cursor-help">
+                  <AlertTriangle className="h-3 w-3" />
+                  <span>Risk: {decision.risk}</span>
+                </div>
+              </Explainer>
             )}
           </div>
 
@@ -83,21 +103,41 @@ export function DecisionRow({ decision }: DecisionRowProps) {
           </h3>
           
           <div className="flex items-center gap-4 mt-2 text-xs text-zinc-400 font-mono">
-            <span>Policy: <span className="text-zinc-300">{decision.policyCode}</span></span>
+            <Explainer
+              title="Policy Reference"
+              description={`This decision is governed by policy ${decision.policyCode}. The policy defines risk classification rules, authority requirements, and SLA parameters.`}
+              advantages={[
+                "Every decision links to its governing policy",
+                "Policy version is captured in evidence",
+                "Policy changes require POLICY_CHANGE decision",
+              ]}
+              legacyComparison={{
+                legacy: "Decisions often lack explicit policy references. Rules embedded in code or configuration without versioning.",
+                turing: "Policy is a first-class reference. Every decision can be traced to the exact policy version that governed it.",
+              }}
+              side="bottom"
+              showIcon={false}
+            >
+              <span className="cursor-help">Policy: <span className="text-zinc-300">{decision.policyCode}</span></span>
+            </Explainer>
             <span className="text-zinc-700">|</span>
-            <span>Auth: <span className="text-zinc-300">{decision.requiredAuthority}</span></span>
+            <Explainer {...EXPLAINER_CONTENT.authorityBadge} side="bottom" showIcon={false}>
+              <span className="cursor-help">Auth: <span className="text-zinc-300">{decision.requiredAuthority}</span></span>
+            </Explainer>
           </div>
         </div>
 
         {/* Right: SLA & Action */}
         <div className="flex items-center gap-6 shrink-0">
-          <div className={cn(
-            "flex items-center gap-2 font-mono text-sm tabular-nums",
-            isSlaRisk ? "text-rose-500 font-bold" : "text-zinc-400"
-          )}>
-            <Clock className="h-4 w-4" />
-            <span>{formatSla(slaSecondsRemaining)}</span>
-          </div>
+          <Explainer {...EXPLAINER_CONTENT.slaIndicator} side="left" showIcon={false}>
+            <div className={cn(
+              "flex items-center gap-2 font-mono text-sm tabular-nums cursor-help",
+              isSlaRisk ? "text-rose-500 font-bold" : "text-zinc-400"
+            )}>
+              <Clock className="h-4 w-4" />
+              <span>{formatSla(slaSecondsRemaining)}</span>
+            </div>
+          </Explainer>
 
           <Link href={`/decisions/${decision.decisionId}`}>
             <Button 

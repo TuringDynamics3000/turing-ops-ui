@@ -11,15 +11,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Explainer } from "@/components/ui/explainer";
+import { EXPLAINER_CONTENT } from "@/lib/explainer-content";
 import { 
   Search, 
   Filter, 
   CheckCircle2,
   AlertTriangle,
-  Clock,
   Plus,
-  ExternalLink,
-  RefreshCw
+  Info,
+  BookOpen,
+  Shield
 } from "lucide-react";
 import { Link } from "wouter";
 
@@ -120,47 +122,140 @@ export default function LedgerExplorerPage() {
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight text-white">Ledger Explorer</h1>
-        <p className="text-zinc-400 text-sm mt-1">
-          Read-only view of ledger state and integrity. All fixes route through Decision Inbox.
-        </p>
+      <div className="flex items-start justify-between">
+        <div>
+          <div className="flex items-center gap-3">
+            <BookOpen className="h-7 w-7 text-orange-500" />
+            <h1 className="text-2xl font-bold tracking-tight text-white">Ledger Explorer</h1>
+            <Explainer
+              title="Event-Sourced Ledger"
+              description="TuringDynamics Core uses event sourcing for the ledger. Every balance is a projection of immutable events. This is fundamentally different from traditional mutable database records."
+              advantages={[
+                "Complete audit trail - every change is an event",
+                "Point-in-time reconstruction of any balance",
+                "Impossible to silently modify historical records",
+                "Natural reconciliation with external systems",
+              ]}
+              legacyComparison={{
+                legacy: "Mutable database records. Balance updates overwrite previous values. Audit trail requires separate logging that may be incomplete.",
+                turing: "Immutable event log. Balances are projections. Any historical state can be reconstructed from events.",
+              }}
+              side="bottom"
+              showIcon={false}
+            >
+              <Info className="h-4 w-4 text-zinc-500 hover:text-orange-500 cursor-help transition-colors" />
+            </Explainer>
+          </div>
+          <p className="text-zinc-400 text-sm mt-1">
+            Read-only view of ledger state and integrity. All fixes route through Decision Inbox.
+          </p>
+        </div>
       </div>
 
       {/* Integrity Indicators */}
-      <Card className="bg-zinc-900/50 border-zinc-800 p-4">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-sm font-bold uppercase tracking-wider text-zinc-500">Integrity Status</h2>
-          <Badge className={INTEGRITY_STATUS.reconciliationStatus === "MATCHED" ? "bg-emerald-900/50 text-emerald-400" : "bg-rose-900/50 text-rose-400"}>
-            <CheckCircle2 className="h-3 w-3 mr-1" />
-            {INTEGRITY_STATUS.reconciliationStatus}
-          </Badge>
-        </div>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div>
-            <p className="text-xs text-zinc-500 uppercase tracking-wider">Projection Lag</p>
-            <p className="text-lg font-bold text-white mt-1">{INTEGRITY_STATUS.projectionLag}s</p>
+      <Explainer
+        title="Real-Time Integrity Monitoring"
+        description="The ledger continuously monitors its own integrity. Projection lag, event processing, and reconciliation status are surfaced in real-time - not discovered during monthly audits."
+        advantages={[
+          "Sub-second projection lag visibility",
+          "Cryptographic snapshot hashes for verification",
+          "Automatic reconciliation with external systems",
+          "Mismatches surface immediately, not at month-end",
+        ]}
+        legacyComparison={{
+          legacy: "Integrity issues discovered during periodic reconciliation. Manual processes to identify and resolve discrepancies. Days or weeks to detect problems.",
+          turing: "Continuous integrity monitoring. Cryptographic proofs. Mismatches detected in seconds and routed to governance.",
+        }}
+        side="bottom"
+        showIcon={false}
+      >
+        <Card className="bg-zinc-900/50 border-zinc-800 p-4 cursor-help">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <Shield className="h-4 w-4 text-orange-500" />
+              <h2 className="text-sm font-bold uppercase tracking-wider text-zinc-500">Integrity Status</h2>
+            </div>
+            <Badge className={INTEGRITY_STATUS.reconciliationStatus === "MATCHED" ? "bg-emerald-900/50 text-emerald-400" : "bg-rose-900/50 text-rose-400"}>
+              <CheckCircle2 className="h-3 w-3 mr-1" />
+              {INTEGRITY_STATUS.reconciliationStatus}
+            </Badge>
           </div>
-          <div>
-            <p className="text-xs text-zinc-500 uppercase tracking-wider">Last Event</p>
-            <p className="text-lg font-bold text-white mt-1">{formatTime(INTEGRITY_STATUS.lastEventProcessed)}</p>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <Explainer
+              title="Projection Lag"
+              description="Time between an event occurring and the balance projection being updated. Sub-second lag means near real-time accuracy."
+              advantages={[
+                "Sub-second updates vs batch processing",
+                "Real-time balance accuracy",
+                "No stale data in decision-making",
+              ]}
+              legacyComparison={{
+                legacy: "Batch processing with minutes or hours of lag. Balances may not reflect recent transactions.",
+                turing: "Event-driven projections with sub-second lag. Balances always current.",
+              }}
+              side="bottom"
+              showIcon={false}
+            >
+              <div className="cursor-help">
+                <p className="text-xs text-zinc-500 uppercase tracking-wider">Projection Lag</p>
+                <p className="text-lg font-bold text-white mt-1">{INTEGRITY_STATUS.projectionLag}s</p>
+              </div>
+            </Explainer>
+            <div>
+              <p className="text-xs text-zinc-500 uppercase tracking-wider">Last Event</p>
+              <p className="text-lg font-bold text-white mt-1">{formatTime(INTEGRITY_STATUS.lastEventProcessed)}</p>
+            </div>
+            <div>
+              <p className="text-xs text-zinc-500 uppercase tracking-wider">Last Reconciliation</p>
+              <p className="text-lg font-bold text-white mt-1">{formatTime(INTEGRITY_STATUS.lastReconciliation)}</p>
+            </div>
+            <Explainer
+              title="Cryptographic Snapshot Hash"
+              description="A SHA-256 hash of the current ledger state. Any modification to historical data would change this hash, making tampering detectable."
+              advantages={[
+                "Tamper-evident ledger state",
+                "Cryptographic proof of integrity",
+                "Can be verified by external auditors",
+              ]}
+              legacyComparison={{
+                legacy: "No cryptographic verification. Trust based on access controls and audit logs that could be modified.",
+                turing: "Cryptographic hashes provide mathematical proof of integrity. Any tampering is immediately detectable.",
+              }}
+              side="bottom"
+              showIcon={false}
+            >
+              <div className="cursor-help">
+                <p className="text-xs text-zinc-500 uppercase tracking-wider">Snapshot Hash</p>
+                <p className="text-sm font-mono text-zinc-400 mt-1 truncate">{INTEGRITY_STATUS.snapshotHash.slice(0, 18)}...</p>
+              </div>
+            </Explainer>
           </div>
-          <div>
-            <p className="text-xs text-zinc-500 uppercase tracking-wider">Last Reconciliation</p>
-            <p className="text-lg font-bold text-white mt-1">{formatTime(INTEGRITY_STATUS.lastReconciliation)}</p>
-          </div>
-          <div>
-            <p className="text-xs text-zinc-500 uppercase tracking-wider">Snapshot Hash</p>
-            <p className="text-sm font-mono text-zinc-400 mt-1 truncate">{INTEGRITY_STATUS.snapshotHash.slice(0, 18)}...</p>
-          </div>
-        </div>
-      </Card>
+        </Card>
+      </Explainer>
 
       {/* Tabs */}
       <Tabs defaultValue="accounts" className="space-y-4">
         <TabsList className="bg-zinc-800 border-zinc-700">
           <TabsTrigger value="accounts" className="data-[state=active]:bg-zinc-700">Accounts</TabsTrigger>
-          <TabsTrigger value="holds" className="data-[state=active]:bg-zinc-700">Holds</TabsTrigger>
+          <TabsTrigger value="holds" className="data-[state=active]:bg-zinc-700">
+            <Explainer
+              title="Governance-Linked Holds"
+              description="Holds in TuringDynamics are not just balance reservations - they're linked to governance decisions. A hold cannot be released without a corresponding decision."
+              advantages={[
+                "Every hold links to a decision",
+                "No manual hold releases without governance",
+                "Complete audit trail of hold lifecycle",
+              ]}
+              legacyComparison={{
+                legacy: "Holds managed operationally. Can be released by staff with database access. May not require approval.",
+                turing: "Holds are governance primitives. Release requires a decision with evidence.",
+              }}
+              side="bottom"
+              showIcon={false}
+            >
+              <span className="cursor-help">Holds</span>
+            </Explainer>
+          </TabsTrigger>
           <TabsTrigger value="postings" className="data-[state=active]:bg-zinc-700">Postings</TabsTrigger>
         </TabsList>
 
@@ -173,8 +268,44 @@ export default function LedgerExplorerPage() {
                   <tr className="border-b border-zinc-800 text-left">
                     <th className="px-4 py-3 text-xs font-bold text-zinc-500 uppercase tracking-wider">Account ID</th>
                     <th className="px-4 py-3 text-xs font-bold text-zinc-500 uppercase tracking-wider">Name</th>
-                    <th className="px-4 py-3 text-xs font-bold text-zinc-500 uppercase tracking-wider">Posted Balance</th>
-                    <th className="px-4 py-3 text-xs font-bold text-zinc-500 uppercase tracking-wider">Available</th>
+                    <th className="px-4 py-3 text-xs font-bold text-zinc-500 uppercase tracking-wider">
+                      <Explainer
+                        title="Posted Balance"
+                        description="The balance after all confirmed postings. This is the 'source of truth' balance that has been fully processed and reconciled."
+                        advantages={[
+                          "Derived from immutable event stream",
+                          "Cryptographically verifiable",
+                          "Point-in-time reconstruction available",
+                        ]}
+                        legacyComparison={{
+                          legacy: "Mutable balance field. Historical values overwritten. Reconstruction requires separate audit tables.",
+                          turing: "Balance is a projection of events. Any historical balance can be reconstructed from the event log.",
+                        }}
+                        side="bottom"
+                        showIcon={false}
+                      >
+                        <span className="cursor-help">Posted Balance</span>
+                      </Explainer>
+                    </th>
+                    <th className="px-4 py-3 text-xs font-bold text-zinc-500 uppercase tracking-wider">
+                      <Explainer
+                        title="Available Balance"
+                        description="Posted balance minus any active holds. This is the amount actually available for new transactions."
+                        advantages={[
+                          "Real-time calculation",
+                          "Accounts for governance holds",
+                          "Prevents overdrafts during approval",
+                        ]}
+                        legacyComparison={{
+                          legacy: "Available balance may not account for pending approvals. Risk of overdraft during approval delays.",
+                          turing: "Available balance always reflects governance holds. Funds reserved until decision is made.",
+                        }}
+                        side="bottom"
+                        showIcon={false}
+                      >
+                        <span className="cursor-help">Available</span>
+                      </Explainer>
+                    </th>
                     <th className="px-4 py-3 text-xs font-bold text-zinc-500 uppercase tracking-wider">Holds</th>
                     <th className="px-4 py-3 text-xs font-bold text-zinc-500 uppercase tracking-wider">Last Activity</th>
                     <th className="px-4 py-3 text-xs font-bold text-zinc-500 uppercase tracking-wider">Status</th>
@@ -224,7 +355,25 @@ export default function LedgerExplorerPage() {
                     <th className="px-4 py-3 text-xs font-bold text-zinc-500 uppercase tracking-wider">Amount</th>
                     <th className="px-4 py-3 text-xs font-bold text-zinc-500 uppercase tracking-wider">Reason</th>
                     <th className="px-4 py-3 text-xs font-bold text-zinc-500 uppercase tracking-wider">Expires</th>
-                    <th className="px-4 py-3 text-xs font-bold text-zinc-500 uppercase tracking-wider">Decision</th>
+                    <th className="px-4 py-3 text-xs font-bold text-zinc-500 uppercase tracking-wider">
+                      <Explainer
+                        title="Linked Decision"
+                        description="Every hold is linked to a governance decision. The hold cannot be released without the decision being resolved."
+                        advantages={[
+                          "Holds are governance primitives",
+                          "One-click navigation to decision",
+                          "Complete audit trail",
+                        ]}
+                        legacyComparison={{
+                          legacy: "Holds may exist without formal approval linkage. Manual correlation required for audits.",
+                          turing: "Every hold links to a decision. Release requires governance resolution.",
+                        }}
+                        side="bottom"
+                        showIcon={false}
+                      >
+                        <span className="cursor-help">Decision</span>
+                      </Explainer>
+                    </th>
                     <th className="px-4 py-3 text-xs font-bold text-zinc-500 uppercase tracking-wider">Action</th>
                   </tr>
                 </thead>
@@ -308,73 +457,89 @@ export default function LedgerExplorerPage() {
             </div>
           </Card>
 
-          <Card className="bg-zinc-900/50 border-zinc-800 overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-zinc-800 text-left">
-                    <th className="px-4 py-3 text-xs font-bold text-zinc-500 uppercase tracking-wider">Posting ID</th>
-                    <th className="px-4 py-3 text-xs font-bold text-zinc-500 uppercase tracking-wider">Account</th>
-                    <th className="px-4 py-3 text-xs font-bold text-zinc-500 uppercase tracking-wider">Type</th>
-                    <th className="px-4 py-3 text-xs font-bold text-zinc-500 uppercase tracking-wider">Amount</th>
-                    <th className="px-4 py-3 text-xs font-bold text-zinc-500 uppercase tracking-wider">Description</th>
-                    <th className="px-4 py-3 text-xs font-bold text-zinc-500 uppercase tracking-wider">Timestamp</th>
-                    <th className="px-4 py-3 text-xs font-bold text-zinc-500 uppercase tracking-wider">Execution Ref</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-zinc-800">
-                  {MOCK_POSTINGS
-                    .filter(p => accountFilter === "all" || p.accountId === accountFilter)
-                    .map((posting) => (
-                    <tr key={posting.postingId} className="hover:bg-zinc-800/50 transition-colors">
-                      <td className="px-4 py-3">
-                        <span className="font-mono text-sm text-white">{posting.postingId}</span>
-                      </td>
-                      <td className="px-4 py-3 text-sm text-zinc-400 font-mono">{posting.accountId}</td>
-                      <td className="px-4 py-3">
-                        <Badge className={posting.type === "CREDIT" ? "bg-emerald-900/50 text-emerald-400" : "bg-rose-900/50 text-rose-400"}>
-                          {posting.type}
-                        </Badge>
-                      </td>
-                      <td className="px-4 py-3 text-sm font-medium">
-                        <span className={posting.type === "CREDIT" ? "text-emerald-400" : "text-rose-400"}>
-                          {posting.type === "CREDIT" ? "+" : "-"}${posting.amount.toLocaleString()}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-sm text-zinc-300">{posting.description}</td>
-                      <td className="px-4 py-3 text-sm text-zinc-400">{formatTime(posting.timestamp)}</td>
-                      <td className="px-4 py-3">
-                        <span className="font-mono text-xs text-zinc-500">{posting.executionRef}</span>
-                      </td>
+          <Explainer
+            title="Immutable Posting Log"
+            description="Every posting is an immutable event. Corrections are made by posting reversals, not by editing history. This creates a complete, tamper-evident audit trail."
+            advantages={[
+              "Postings are immutable events",
+              "Corrections via reversals, not edits",
+              "Complete audit trail by design",
+              "Reconciliation with external systems",
+            ]}
+            legacyComparison={{
+              legacy: "Postings may be edited or deleted by privileged users. Audit trail depends on separate logging.",
+              turing: "Postings are immutable. Corrections are new events. History cannot be rewritten.",
+            }}
+            side="top"
+            showIcon={false}
+          >
+            <Card className="bg-zinc-900/50 border-zinc-800 overflow-hidden cursor-help">
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-zinc-800 text-left">
+                      <th className="px-4 py-3 text-xs font-bold text-zinc-500 uppercase tracking-wider">Posting ID</th>
+                      <th className="px-4 py-3 text-xs font-bold text-zinc-500 uppercase tracking-wider">Account</th>
+                      <th className="px-4 py-3 text-xs font-bold text-zinc-500 uppercase tracking-wider">Type</th>
+                      <th className="px-4 py-3 text-xs font-bold text-zinc-500 uppercase tracking-wider">Amount</th>
+                      <th className="px-4 py-3 text-xs font-bold text-zinc-500 uppercase tracking-wider">Description</th>
+                      <th className="px-4 py-3 text-xs font-bold text-zinc-500 uppercase tracking-wider">Timestamp</th>
+                      <th className="px-4 py-3 text-xs font-bold text-zinc-500 uppercase tracking-wider">
+                        <Explainer {...EXPLAINER_CONTENT.executionRef} side="bottom" showIcon={false}>
+                          <span className="cursor-help">Execution Ref</span>
+                        </Explainer>
+                      </th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </Card>
+                  </thead>
+                  <tbody className="divide-y divide-zinc-800">
+                    {MOCK_POSTINGS
+                      .filter(p => accountFilter === "all" || p.accountId === accountFilter)
+                      .map((posting) => (
+                      <tr key={posting.postingId} className="hover:bg-zinc-800/50 transition-colors">
+                        <td className="px-4 py-3">
+                          <span className="font-mono text-sm text-white">{posting.postingId}</span>
+                        </td>
+                        <td className="px-4 py-3 text-sm text-zinc-400 font-mono">{posting.accountId}</td>
+                        <td className="px-4 py-3">
+                          <Badge className={posting.type === "CREDIT" ? "bg-emerald-900/50 text-emerald-400" : "bg-rose-900/50 text-rose-400"}>
+                            {posting.type}
+                          </Badge>
+                        </td>
+                        <td className="px-4 py-3 text-sm font-medium">
+                          <span className={posting.type === "CREDIT" ? "text-emerald-400" : "text-rose-400"}>
+                            {posting.type === "CREDIT" ? "+" : "-"}${posting.amount.toLocaleString()}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-sm text-zinc-300">{posting.description}</td>
+                        <td className="px-4 py-3 text-sm text-zinc-400">{formatTime(posting.timestamp)}</td>
+                        <td className="px-4 py-3">
+                          <span className="font-mono text-xs text-zinc-500">{posting.executionRef}</span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </Card>
+          </Explainer>
         </TabsContent>
       </Tabs>
 
-      {/* Mismatch Alert (conditional) */}
-      {false && (
-        <Card className="bg-rose-900/20 border-rose-800 p-4">
-          <div className="flex items-start gap-4">
-            <AlertTriangle className="h-5 w-5 text-rose-400 mt-0.5" />
-            <div className="flex-1">
-              <h3 className="text-sm font-bold text-rose-400">Reconciliation Mismatch Detected</h3>
-              <p className="text-sm text-rose-300 mt-1">
-                Account ACC-001-AUD shows a discrepancy of $1,234.56 between posted and expected balance.
-              </p>
-              <Link href="/inbox">
-                <Button size="sm" className="mt-3 bg-rose-600 hover:bg-rose-700 text-white">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Create Decision: LEDGER_EXCEPTION
-                </Button>
-              </Link>
-            </div>
+      {/* Governance Notice */}
+      <div className="bg-zinc-900/30 border border-zinc-800 rounded-lg p-4">
+        <div className="flex items-start gap-3">
+          <Shield className="h-5 w-5 text-orange-500 mt-0.5" />
+          <div>
+            <h3 className="text-sm font-semibold text-zinc-200 mb-1">Event-Sourced Architecture</h3>
+            <p className="text-xs text-zinc-500">
+              Unlike traditional ledgers where balances are mutable database fields, TuringDynamics Core derives all balances
+              from an immutable event stream. This means any historical balance can be reconstructed, and any tampering
+              would be cryptographically detectable. Legacy systems like Thought Machine use similar event sourcing but
+              lack the integrated governance layer that routes all exceptions through formal decision workflows.
+            </p>
           </div>
-        </Card>
-      )}
+        </div>
+      </div>
     </div>
   );
 }

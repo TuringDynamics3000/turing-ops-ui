@@ -1,5 +1,7 @@
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Explainer } from "@/components/ui/explainer";
+import { EXPLAINER_CONTENT } from "@/lib/explainer-content";
 import { trpc } from "@/lib/trpc";
 import { 
   Activity, 
@@ -77,38 +79,46 @@ export default function OverviewPage() {
           Live Operations
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <KPICard
-            title="Payments Today"
-            value="247"
-            subtitle="$1.2M AUD total value"
-            trend="+12%"
-            trendUp={true}
-            icon={<TrendingUp className="h-5 w-5" />}
-          />
-          <KPICard
-            title="Success Rate"
-            value="98.4%"
-            subtitle="243 posted / 247 submitted"
-            trend="+0.3%"
-            trendUp={true}
-            icon={<CheckCircle2 className="h-5 w-5" />}
-          />
-          <KPICard
-            title="Failure Rate"
-            value="1.6%"
-            subtitle="4 failed / 247 submitted"
-            trend="-0.2%"
-            trendUp={true}
-            icon={<AlertTriangle className="h-5 w-5" />}
-          />
-          <KPICard
-            title="Processing Latency"
-            value="142ms"
-            subtitle="P95: 380ms"
-            trend="-8ms"
-            trendUp={true}
-            icon={<Clock className="h-5 w-5" />}
-          />
+          <Explainer {...EXPLAINER_CONTENT.paymentsToday} side="bottom">
+            <KPICard
+              title="Payments Today"
+              value="247"
+              subtitle="$1.2M AUD total value"
+              trend="+12%"
+              trendUp={true}
+              icon={<TrendingUp className="h-5 w-5" />}
+            />
+          </Explainer>
+          <Explainer {...EXPLAINER_CONTENT.successRate} side="bottom">
+            <KPICard
+              title="Success Rate"
+              value="98.4%"
+              subtitle="243 posted / 247 submitted"
+              trend="+0.3%"
+              trendUp={true}
+              icon={<CheckCircle2 className="h-5 w-5" />}
+            />
+          </Explainer>
+          <Explainer {...EXPLAINER_CONTENT.failureRate} side="bottom">
+            <KPICard
+              title="Failure Rate"
+              value="1.6%"
+              subtitle="4 failed / 247 submitted"
+              trend="-0.2%"
+              trendUp={true}
+              icon={<AlertTriangle className="h-5 w-5" />}
+            />
+          </Explainer>
+          <Explainer {...EXPLAINER_CONTENT.processingLatency} side="bottom">
+            <KPICard
+              title="Processing Latency"
+              value="142ms"
+              subtitle="P95: 380ms"
+              trend="-8ms"
+              trendUp={true}
+              icon={<Clock className="h-5 w-5" />}
+            />
+          </Explainer>
         </div>
       </section>
 
@@ -119,33 +129,41 @@ export default function OverviewPage() {
           Decision Governance
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <KPICard
-            title="Decisions Pending"
-            value={String(pendingDecisions.length)}
-            subtitle={`${pendingByRisk.CRITICAL} critical, ${pendingByRisk.HIGH} high`}
-            icon={<Clock className="h-5 w-5" />}
-            highlight={pendingByRisk.CRITICAL > 0}
-          />
-          <KPICard
-            title="Time to Decision"
-            value="4.2 min"
-            subtitle="P95: 12.8 min"
-            trend="-1.3 min"
-            trendUp={true}
-            icon={<Clock className="h-5 w-5" />}
-          />
-          <KPICard
-            title="Escalation Rate"
-            value={`${completedDecisions.length > 0 ? Math.round((escalatedDecisions.length / completedDecisions.length) * 100) : 0}%`}
-            subtitle={`${escalatedDecisions.length} escalated / ${completedDecisions.length} completed`}
-            icon={<ArrowUpRight className="h-5 w-5" />}
-          />
-          <KPICard
-            title="Dual Control Compliance"
-            value="100%"
-            subtitle="All dual-control decisions verified"
-            icon={<Shield className="h-5 w-5" />}
-          />
+          <Explainer {...EXPLAINER_CONTENT.decisionsPending} side="bottom">
+            <KPICard
+              title="Decisions Pending"
+              value={String(pendingDecisions.length)}
+              subtitle={`${pendingByRisk.CRITICAL} critical, ${pendingByRisk.HIGH} high`}
+              icon={<Clock className="h-5 w-5" />}
+              highlight={pendingByRisk.CRITICAL > 0}
+            />
+          </Explainer>
+          <Explainer {...EXPLAINER_CONTENT.timeToDecision} side="bottom">
+            <KPICard
+              title="Time to Decision"
+              value="4.2 min"
+              subtitle="P95: 12.8 min"
+              trend="-1.3 min"
+              trendUp={true}
+              icon={<Clock className="h-5 w-5" />}
+            />
+          </Explainer>
+          <Explainer {...EXPLAINER_CONTENT.escalationRate} side="bottom">
+            <KPICard
+              title="Escalation Rate"
+              value={`${completedDecisions.length > 0 ? Math.round((escalatedDecisions.length / completedDecisions.length) * 100) : 0}%`}
+              subtitle={`${escalatedDecisions.length} escalated / ${completedDecisions.length} completed`}
+              icon={<ArrowUpRight className="h-5 w-5" />}
+            />
+          </Explainer>
+          <Explainer {...EXPLAINER_CONTENT.dualControlCompliance} side="bottom">
+            <KPICard
+              title="Dual Control Compliance"
+              value="100%"
+              subtitle="All dual-control decisions verified"
+              icon={<Shield className="h-5 w-5" />}
+            />
+          </Explainer>
         </div>
       </section>
 
@@ -156,54 +174,99 @@ export default function OverviewPage() {
           Risk & Exceptions
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          <Card className="bg-zinc-900/50 border-zinc-800 p-5">
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="text-xs text-zinc-500 uppercase tracking-wider">High Risk Queue Ageing</p>
-                <p className="text-2xl font-bold text-white mt-1">
-                  {pendingByRisk.HIGH + pendingByRisk.CRITICAL > 0 ? "8.5 min" : "—"}
-                </p>
-                <p className="text-xs text-zinc-400 mt-1">P95 age of pending high-risk items</p>
-              </div>
-              {pendingByRisk.CRITICAL > 0 && (
-                <Badge className="bg-rose-900/50 text-rose-400 border-rose-800">
-                  {pendingByRisk.CRITICAL} CRITICAL
-                </Badge>
-              )}
-            </div>
-          </Card>
-          <Card className="bg-zinc-900/50 border-zinc-800 p-5">
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="text-xs text-zinc-500 uppercase tracking-wider">AML Exceptions Pending</p>
-                <p className="text-2xl font-bold text-white mt-1">{pendingByType.AML_EXCEPTION}</p>
-                <p className="text-xs text-zinc-400 mt-1">Requires COMPLIANCE authority</p>
-              </div>
-              {pendingByType.AML_EXCEPTION > 0 && (
-                <Link href="/decisions/inbox">
-                  <Badge variant="outline" className="border-orange-700 text-orange-400 cursor-pointer hover:bg-orange-900/20">
-                    Review →
+          <Explainer 
+            title="High Risk Queue Ageing"
+            description="P95 age of pending high-risk and critical decisions. Long ageing indicates potential SLA breach risk."
+            advantages={[
+              "Real-time ageing calculation, not batch metrics",
+              "Automatic escalation triggers before SLA breach",
+              "Ageing history preserved in evidence trail",
+            ]}
+            legacyComparison={{
+              legacy: "Queue ageing calculated in periodic reports. SLA breaches discovered after the fact.",
+              turing: "Live ageing with proactive escalation. System acts before breaches occur, not after.",
+            }}
+            side="bottom"
+          >
+            <Card className="bg-zinc-900/50 border-zinc-800 p-5">
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-xs text-zinc-500 uppercase tracking-wider">High Risk Queue Ageing</p>
+                  <p className="text-2xl font-bold text-white mt-1">
+                    {pendingByRisk.HIGH + pendingByRisk.CRITICAL > 0 ? "8.5 min" : "—"}
+                  </p>
+                  <p className="text-xs text-zinc-400 mt-1">P95 age of pending high-risk items</p>
+                </div>
+                {pendingByRisk.CRITICAL > 0 && (
+                  <Badge className="bg-rose-900/50 text-rose-400 border-rose-800">
+                    {pendingByRisk.CRITICAL} CRITICAL
                   </Badge>
-                </Link>
-              )}
-            </div>
-          </Card>
-          <Card className="bg-zinc-900/50 border-zinc-800 p-5">
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="text-xs text-zinc-500 uppercase tracking-wider">Overrides Pending</p>
-                <p className="text-2xl font-bold text-white mt-1">{pendingByType.LIMIT_OVERRIDE}</p>
-                <p className="text-xs text-zinc-400 mt-1">Requires DUAL authority</p>
+                )}
               </div>
-              {pendingByType.LIMIT_OVERRIDE > 0 && (
-                <Link href="/decisions/inbox">
-                  <Badge variant="outline" className="border-amber-700 text-amber-400 cursor-pointer hover:bg-amber-900/20">
-                    Review →
-                  </Badge>
-                </Link>
-              )}
-            </div>
-          </Card>
+            </Card>
+          </Explainer>
+          <Explainer 
+            title="AML Exception Queue"
+            description="Anti-Money Laundering exceptions requiring COMPLIANCE authority. These decisions have elevated regulatory scrutiny."
+            advantages={[
+              "AML decisions isolated in dedicated queue",
+              "Compliance authority cryptographically enforced",
+              "Every AML decision produces regulatory-grade evidence",
+            ]}
+            legacyComparison={{
+              legacy: "AML exceptions mixed with general approvals. Compliance review often a checkbox, not enforced authority.",
+              turing: "AML is a first-class decision type with dedicated authority requirements. Cannot be approved by non-compliance roles.",
+            }}
+            side="bottom"
+          >
+            <Card className="bg-zinc-900/50 border-zinc-800 p-5">
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-xs text-zinc-500 uppercase tracking-wider">AML Exceptions Pending</p>
+                  <p className="text-2xl font-bold text-white mt-1">{pendingByType.AML_EXCEPTION}</p>
+                  <p className="text-xs text-zinc-400 mt-1">Requires COMPLIANCE authority</p>
+                </div>
+                {pendingByType.AML_EXCEPTION > 0 && (
+                  <Link href="/decisions/inbox">
+                    <Badge variant="outline" className="border-orange-700 text-orange-400 cursor-pointer hover:bg-orange-900/20">
+                      Review →
+                    </Badge>
+                  </Link>
+                )}
+              </div>
+            </Card>
+          </Explainer>
+          <Explainer 
+            title="Limit Override Queue"
+            description="Limit override requests requiring DUAL authority - two independent approvals from authorized principals."
+            advantages={[
+              "Dual control cryptographically enforced",
+              "Both approvers' signatures sealed in evidence",
+              "Cannot be bypassed by any user including admins",
+            ]}
+            legacyComparison={{
+              legacy: "Dual control often 'four eyes' workflow that can be bypassed by batch operations or emergency overrides.",
+              turing: "Cryptographic dual control - evidence is invalid without two distinct signatures. No bypass exists.",
+            }}
+            side="bottom"
+          >
+            <Card className="bg-zinc-900/50 border-zinc-800 p-5">
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-xs text-zinc-500 uppercase tracking-wider">Overrides Pending</p>
+                  <p className="text-2xl font-bold text-white mt-1">{pendingByType.LIMIT_OVERRIDE}</p>
+                  <p className="text-xs text-zinc-400 mt-1">Requires DUAL authority</p>
+                </div>
+                {pendingByType.LIMIT_OVERRIDE > 0 && (
+                  <Link href="/decisions/inbox">
+                    <Badge variant="outline" className="border-amber-700 text-amber-400 cursor-pointer hover:bg-amber-900/20">
+                      Review →
+                    </Badge>
+                  </Link>
+                )}
+              </div>
+            </Card>
+          </Explainer>
         </div>
       </section>
 
@@ -214,35 +277,67 @@ export default function OverviewPage() {
           Evidence Integrity
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          <KPICard
+          <Explainer 
             title="Evidence Pack Coverage"
-            value={`${evidenceCoverage}%`}
-            subtitle={`${evidenceCount} packs / ${completedDecisions.length} decisions`}
-            icon={<FileText className="h-5 w-5" />}
-          />
-          <KPICard
-            title="Generation Failures"
-            value="0"
-            subtitle="Last 30 days"
-            icon={<CheckCircle2 className="h-5 w-5" />}
-          />
-          <Card className="bg-zinc-900/50 border-zinc-800 p-5">
-            <div>
-              <p className="text-xs text-zinc-500 uppercase tracking-wider">Last Evidence Hash</p>
-              {latestEvidence ? (
-                <>
-                  <p className="text-sm font-mono text-white mt-2 truncate">
-                    {latestEvidence.merkleHash?.slice(0, 32)}...
-                  </p>
-                  <p className="text-xs text-zinc-400 mt-1">
-                    {latestEvidence.evidenceId} • {new Date(latestEvidence.createdAt).toLocaleString()}
-                  </p>
-                </>
-              ) : (
-                <p className="text-sm text-zinc-500 mt-2">No evidence packs generated yet</p>
-              )}
-            </div>
-          </Card>
+            description="Percentage of completed decisions that have a corresponding cryptographically sealed Evidence Pack."
+            advantages={[
+              "100% coverage is the baseline expectation",
+              "Any gap triggers immediate investigation",
+              "Coverage tracked in real-time, not batch reports",
+            ]}
+            legacyComparison={{
+              legacy: "Audit coverage measured periodically. Gaps discovered in compliance reviews weeks or months later.",
+              turing: "Real-time coverage monitoring. Any decision without evidence is immediately flagged as a governance incident.",
+            }}
+            side="bottom"
+          >
+            <KPICard
+              title="Evidence Pack Coverage"
+              value={`${evidenceCoverage}%`}
+              subtitle={`${evidenceCount} packs / ${completedDecisions.length} decisions`}
+              icon={<FileText className="h-5 w-5" />}
+            />
+          </Explainer>
+          <Explainer 
+            title="Evidence Generation Reliability"
+            description="Count of Evidence Pack generation failures in the last 30 days. Zero is the expected state."
+            advantages={[
+              "Evidence generation is transactional with decision",
+              "Failures block decision completion, not silently logged",
+              "Retry logic with dead-letter queue for investigation",
+            ]}
+            legacyComparison={{
+              legacy: "Audit log generation often async and best-effort. Failures may go unnoticed until audit time.",
+              turing: "Evidence is synchronous with decision. A decision cannot complete without its Evidence Pack.",
+            }}
+            side="bottom"
+          >
+            <KPICard
+              title="Generation Failures"
+              value="0"
+              subtitle="Last 30 days"
+              icon={<CheckCircle2 className="h-5 w-5" />}
+            />
+          </Explainer>
+          <Explainer {...EXPLAINER_CONTENT.evidenceHash} side="bottom">
+            <Card className="bg-zinc-900/50 border-zinc-800 p-5">
+              <div>
+                <p className="text-xs text-zinc-500 uppercase tracking-wider">Last Evidence Hash</p>
+                {latestEvidence ? (
+                  <>
+                    <p className="text-sm font-mono text-white mt-2 truncate">
+                      {latestEvidence.merkleHash?.slice(0, 32)}...
+                    </p>
+                    <p className="text-xs text-zinc-400 mt-1">
+                      {latestEvidence.evidenceId} • {new Date(latestEvidence.createdAt).toLocaleString()}
+                    </p>
+                  </>
+                ) : (
+                  <p className="text-sm text-zinc-500 mt-2">No evidence packs generated yet</p>
+                )}
+              </div>
+            </Card>
+          </Explainer>
         </div>
       </section>
 
@@ -253,36 +348,68 @@ export default function OverviewPage() {
           System Health
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          <Card className="bg-zinc-900/50 border-zinc-800 p-5">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs text-zinc-500 uppercase tracking-wider">Decision API</p>
-                <p className="text-lg font-bold text-emerald-400 mt-1">Healthy</p>
-                <p className="text-xs text-zinc-400 mt-1">0.02% error rate • 45ms P95</p>
+          <Explainer 
+            title="Decision API Health"
+            description="Real-time health status of the Decision API endpoint, including error rate and latency percentiles."
+            advantages={[
+              "Sub-50ms P95 latency for authority checks",
+              "Automatic circuit breaker on degradation",
+              "Health status is a governance event",
+            ]}
+            legacyComparison={{
+              legacy: "API health monitored by infrastructure teams. Degradation may not be visible to governance operators.",
+              turing: "API health is surfaced in the governance console. Operators see system state alongside decision state.",
+            }}
+            side="bottom"
+          >
+            <Card className="bg-zinc-900/50 border-zinc-800 p-5">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-zinc-500 uppercase tracking-wider">Decision API</p>
+                  <p className="text-lg font-bold text-emerald-400 mt-1">Healthy</p>
+                  <p className="text-xs text-zinc-400 mt-1">0.02% error rate • 45ms P95</p>
+                </div>
+                <div className="h-3 w-3 rounded-full bg-emerald-500 animate-pulse"></div>
               </div>
-              <div className="h-3 w-3 rounded-full bg-emerald-500 animate-pulse"></div>
-            </div>
-          </Card>
-          <Card className="bg-zinc-900/50 border-zinc-800 p-5">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs text-zinc-500 uppercase tracking-wider">Execution Connector</p>
-                <p className="text-lg font-bold text-emerald-400 mt-1">Healthy</p>
-                <p className="text-xs text-zinc-400 mt-1">0.01% error rate • 120ms P95</p>
+            </Card>
+          </Explainer>
+          <Explainer 
+            title="Execution Connector Health"
+            description="Health status of the connector to downstream execution systems (payment rails, ledger, etc.)."
+            advantages={[
+              "Execution status linked to decision lifecycle",
+              "Connector failures trigger automatic hold",
+              "Recovery produces governance event",
+            ]}
+            legacyComparison={{
+              legacy: "Execution systems monitored separately. Decisions may be approved while execution is degraded.",
+              turing: "Execution health is part of decision context. System can hold decisions when execution is unhealthy.",
+            }}
+            side="bottom"
+          >
+            <Card className="bg-zinc-900/50 border-zinc-800 p-5">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-zinc-500 uppercase tracking-wider">Execution Connector</p>
+                  <p className="text-lg font-bold text-emerald-400 mt-1">Healthy</p>
+                  <p className="text-xs text-zinc-400 mt-1">0.01% error rate • 120ms P95</p>
+                </div>
+                <div className="h-3 w-3 rounded-full bg-emerald-500 animate-pulse"></div>
               </div>
-              <div className="h-3 w-3 rounded-full bg-emerald-500 animate-pulse"></div>
-            </div>
-          </Card>
-          <Card className="bg-zinc-900/50 border-zinc-800 p-5">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs text-zinc-500 uppercase tracking-wider">Projection Lag</p>
-                <p className="text-lg font-bold text-white mt-1">0.3s</p>
-                <p className="text-xs text-zinc-400 mt-1">Payments: 0.2s • Ledger: 0.4s</p>
+            </Card>
+          </Explainer>
+          <Explainer {...EXPLAINER_CONTENT.ledgerIntegrity} side="bottom">
+            <Card className="bg-zinc-900/50 border-zinc-800 p-5">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-zinc-500 uppercase tracking-wider">Projection Lag</p>
+                  <p className="text-lg font-bold text-white mt-1">0.3s</p>
+                  <p className="text-xs text-zinc-400 mt-1">Payments: 0.2s • Ledger: 0.4s</p>
+                </div>
+                <div className="h-3 w-3 rounded-full bg-emerald-500"></div>
               </div>
-              <div className="h-3 w-3 rounded-full bg-emerald-500"></div>
-            </div>
-          </Card>
+            </Card>
+          </Explainer>
         </div>
       </section>
 
@@ -297,7 +424,7 @@ export default function OverviewPage() {
               {pendingDecisions
                 .sort((a, b) => {
                   const riskOrder = { CRITICAL: 0, HIGH: 1, MEDIUM: 2, LOW: 3 };
-                  return riskOrder[a.risk] - riskOrder[b.risk];
+                  return (riskOrder[a.risk as keyof typeof riskOrder] || 3) - (riskOrder[b.risk as keyof typeof riskOrder] || 3);
                 })
                 .slice(0, 5)
                 .map((decision) => (
