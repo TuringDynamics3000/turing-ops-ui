@@ -1,0 +1,9 @@
+{
+  "query": "ALTER TABLE decisions MODIFY COLUMN type ENUM('PAYMENT', 'LIMIT_OVERRIDE', 'AML_EXCEPTION', 'POLICY_CHANGE') NOT NULL;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user zFXp9RNvPn4ZSGY.f4c672cde8f4 --database AKEywqHrvuBg7Sz2tPDLPz --execute ALTER TABLE decisions MODIFY COLUMN type ENUM('PAYMENT', 'LIMIT_OVERRIDE', 'AML_EXCEPTION', 'POLICY_CHANGE') NOT NULL;",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 1691
+}

@@ -1,16 +1,14 @@
 import { Link, useLocation } from "wouter";
 import { cn } from "@/lib/utils";
 import { 
+  LayoutDashboard,
   Inbox, 
-  Activity, 
-  CheckCircle2, 
   CreditCard, 
   BookOpen, 
   ShieldAlert, 
-  Scale, 
   FileText, 
-  Download, 
-  Server, 
+  Search,
+  FileBarChart,
   Settings 
 } from "lucide-react";
 
@@ -53,30 +51,86 @@ export function Sidebar() {
 
   return (
     <aside className="w-[260px] border-r border-border bg-zinc-950/50 flex flex-col h-full overflow-y-auto py-6 px-3">
+      {/* Executive Overview */}
+      <NavSection title="Overview">
+        <NavItem 
+          href="/overview" 
+          icon={LayoutDashboard} 
+          label="Executive Overview" 
+          active={location === "/overview" || location === "/"} 
+        />
+      </NavSection>
+
+      {/* Decision Inbox - Authoritative Workflow */}
       <NavSection title="Decisions">
-        <NavItem href="/decisions/inbox" icon={Inbox} label="Inbox" active={location === "/decisions/inbox" || location === "/"} />
-        <NavItem href="/decisions/active" icon={Activity} label="Active" active={location === "/decisions/active"} />
-        <NavItem href="/decisions/completed" icon={CheckCircle2} label="Completed" active={location === "/decisions/completed"} />
+        <NavItem 
+          href="/inbox" 
+          icon={Inbox} 
+          label="Decision Inbox" 
+          active={location === "/inbox" || location.startsWith("/decisions")} 
+        />
       </NavSection>
 
-      <NavSection title="Execution">
-        <NavItem href="/ledger/payments" icon={CreditCard} label="Payments Ledger" active={location === "/ledger/payments"} />
-        <NavItem href="/ledger/journals" icon={BookOpen} label="Journals" active={location === "/ledger/journals"} />
+      {/* State Explorers - Read-only Derived State */}
+      <NavSection title="State Explorers">
+        <NavItem 
+          href="/state/payments" 
+          icon={CreditCard} 
+          label="Payments" 
+          active={location === "/state/payments"} 
+        />
+        <NavItem 
+          href="/state/ledger" 
+          icon={BookOpen} 
+          label="Ledger" 
+          active={location === "/state/ledger"} 
+        />
+        <NavItem 
+          href="/state/risk" 
+          icon={ShieldAlert} 
+          label="Risk" 
+          active={location === "/state/risk"} 
+        />
       </NavSection>
 
-      <NavSection title="Risk & Controls">
-        <NavItem href="/limits" icon={Scale} label="Limits & Overrides" active={location === "/limits"} />
-        <NavItem href="/risk" icon={ShieldAlert} label="AML & Risk" active={location === "/risk"} />
-      </NavSection>
-
+      {/* Evidence Library */}
       <NavSection title="Evidence">
-        <NavItem href="/evidence" icon={FileText} label="Evidence Packs" active={location === "/evidence"} />
-        <NavItem href="/audit" icon={Download} label="Audit Exports" active={location === "/audit"} />
+        <NavItem 
+          href="/evidence" 
+          icon={FileText} 
+          label="Evidence Library" 
+          active={location === "/evidence"} 
+        />
       </NavSection>
 
+      {/* Global Search */}
+      <NavSection title="Search">
+        <NavItem 
+          href="/search" 
+          icon={Search} 
+          label="Global Search" 
+          active={location === "/search"} 
+        />
+      </NavSection>
+
+      {/* Board Pack */}
+      <NavSection title="Reporting">
+        <NavItem 
+          href="/board-pack" 
+          icon={FileBarChart} 
+          label="Board Pack" 
+          active={location === "/board-pack"} 
+        />
+      </NavSection>
+
+      {/* System */}
       <NavSection title="System">
-        <NavItem href="/system/health" icon={Server} label="Health" active={location === "/system/health"} />
-        <NavItem href="/system/config" icon={Settings} label="Configuration" active={location === "/system/config"} />
+        <NavItem 
+          href="/system/config" 
+          icon={Settings} 
+          label="Configuration" 
+          active={location === "/system/config"} 
+        />
       </NavSection>
     </aside>
   );

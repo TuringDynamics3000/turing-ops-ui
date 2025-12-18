@@ -9,16 +9,20 @@ import { AlertTriangle, Clock, ArrowRight } from "lucide-react";
 interface DbDecision {
   id: number;
   decisionId: string;
-  type: "PAYMENT" | "LIMIT_OVERRIDE" | "AML_EXCEPTION";
+  type: "PAYMENT" | "LIMIT_OVERRIDE" | "AML_EXCEPTION" | "POLICY_CHANGE";
   subject: string;
   policyCode: string;
   risk: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
   requiredAuthority: "SUPERVISOR" | "COMPLIANCE" | "DUAL";
-  status: string;
+  status: "PENDING" | "APPROVED" | "REJECTED" | "ESCALATED" | "EXECUTED";
   slaDeadline: Date;
   amount: string | null;
   beneficiary: string | null;
   context: string | null;
+  decidedAt: Date | null;
+  decidedBy: string | null;
+  justification: string | null;
+  executionRef: string | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -56,7 +60,8 @@ export function DecisionRow({ decision }: DecisionRowProps) {
               "font-mono text-[10px] tracking-wider uppercase rounded-sm px-1.5 py-0.5 border-zinc-700",
               decision.type === "PAYMENT" && "text-emerald-400 bg-emerald-950/30",
               decision.type === "LIMIT_OVERRIDE" && "text-amber-400 bg-amber-950/30",
-              decision.type === "AML_EXCEPTION" && "text-rose-400 bg-rose-950/30"
+              decision.type === "AML_EXCEPTION" && "text-rose-400 bg-rose-950/30",
+              decision.type === "POLICY_CHANGE" && "text-purple-400 bg-purple-950/30"
             )}>
               {decision.type.replace("_", " ")}
             </Badge>

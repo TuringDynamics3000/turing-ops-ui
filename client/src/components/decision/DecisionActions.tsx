@@ -11,16 +11,20 @@ import { useLocation } from "wouter";
 interface DbDecision {
   id: number;
   decisionId: string;
-  type: "PAYMENT" | "LIMIT_OVERRIDE" | "AML_EXCEPTION";
+  type: "PAYMENT" | "LIMIT_OVERRIDE" | "AML_EXCEPTION" | "POLICY_CHANGE";
   subject: string;
   policyCode: string;
   risk: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
   requiredAuthority: "SUPERVISOR" | "COMPLIANCE" | "DUAL";
-  status: string;
+  status: "PENDING" | "APPROVED" | "REJECTED" | "ESCALATED" | "EXECUTED";
   slaDeadline: Date;
   amount: string | null;
   beneficiary: string | null;
   context: string | null;
+  decidedAt: Date | null;
+  decidedBy: string | null;
+  justification: string | null;
+  executionRef: string | null;
   createdAt: Date;
   updatedAt: Date;
 }

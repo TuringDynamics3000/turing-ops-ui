@@ -7,31 +7,58 @@ import { ThemeProvider } from "./contexts/ThemeContext";
 import { Shell } from "./components/shell/Shell";
 
 // Page imports
+import OverviewPage from "./pages/overview/page";
 import InboxPage from "./pages/decisions/inbox/page";
 import DecisionDetailPage from "./pages/decisions/[id]/page";
+import PaymentsExplorerPage from "./pages/state/payments/page";
+import LedgerExplorerPage from "./pages/state/ledger/page";
+import RiskExplorerPage from "./pages/state/risk/page";
 import EvidencePage from "./pages/evidence/page";
 import ConfigPage from "./pages/system/config/page";
+import SearchPage from "./pages/search/page";
+import BoardPackPage from "./pages/board-pack/page";
 
 function Router() {
-  // make sure to consider if you need authentication for certain routes
   return (
     <Shell>
       <Switch>
-        <Route path="/" component={() => <Redirect to="/decisions/inbox" />} />
-        <Route path="/decisions/inbox" component={InboxPage} />
+        {/* Default redirect to Overview */}
+        <Route path="/" component={() => <Redirect to="/overview" />} />
+        
+        {/* Executive Overview */}
+        <Route path="/overview" component={OverviewPage} />
+        
+        {/* Decision Inbox (authoritative workflow) */}
+        <Route path="/inbox" component={InboxPage} />
+        <Route path="/decisions/inbox" component={() => <Redirect to="/inbox" />} />
         <Route path="/decisions/:id" component={DecisionDetailPage} />
+        
+        {/* State Explorers (read-only derived state) */}
+        <Route path="/state/payments" component={PaymentsExplorerPage} />
+        <Route path="/state/ledger" component={LedgerExplorerPage} />
+        <Route path="/state/risk" component={RiskExplorerPage} />
+        
+        {/* Evidence Library */}
         <Route path="/evidence" component={EvidencePage} />
+        
+        {/* Global Search */}
+        <Route path="/search" component={SearchPage} />
+        
+        {/* Board Pack */}
+        <Route path="/board-pack" component={BoardPackPage} />
+        
+        {/* System Configuration */}
         <Route path="/system/config" component={ConfigPage} />
         
-        {/* Placeholder routes for other sections */}
-        <Route path="/decisions/active" component={() => <div className="text-zinc-500 font-mono">/decisions/active - Coming Soon</div>} />
-        <Route path="/decisions/completed" component={() => <div className="text-zinc-500 font-mono">/decisions/completed - Coming Soon</div>} />
-        <Route path="/ledger/payments" component={() => <div className="text-zinc-500 font-mono">/ledger/payments - Coming Soon</div>} />
-        <Route path="/ledger/journals" component={() => <div className="text-zinc-500 font-mono">/ledger/journals - Coming Soon</div>} />
-        <Route path="/limits" component={() => <div className="text-zinc-500 font-mono">/limits - Coming Soon</div>} />
-        <Route path="/risk" component={() => <div className="text-zinc-500 font-mono">/risk - Coming Soon</div>} />
-        <Route path="/audit" component={() => <div className="text-zinc-500 font-mono">/audit - Coming Soon</div>} />
-        <Route path="/system/health" component={() => <div className="text-zinc-500 font-mono">/system/health - Coming Soon</div>} />
+        {/* Legacy routes - redirect to new structure */}
+        <Route path="/decisions/active" component={() => <Redirect to="/inbox" />} />
+        <Route path="/decisions/completed" component={() => <Redirect to="/evidence" />} />
+        <Route path="/ledger/payments" component={() => <Redirect to="/state/payments" />} />
+        <Route path="/ledger/journals" component={() => <Redirect to="/state/ledger" />} />
+        <Route path="/limits" component={() => <Redirect to="/state/risk" />} />
+        <Route path="/risk" component={() => <Redirect to="/state/risk" />} />
+        <Route path="/audit" component={() => <Redirect to="/evidence" />} />
+        <Route path="/system/health" component={() => <Redirect to="/overview" />} />
         
         <Route component={NotFound} />
       </Switch>

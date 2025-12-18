@@ -1,4 +1,4 @@
-import { eq, desc, and, sql } from "drizzle-orm";
+import { eq, desc } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import { 
   InsertUser, users, 
@@ -139,16 +139,28 @@ export async function createDecision(data: Omit<InsertDecision, "decisionId">): 
   return result;
 }
 
-export async function updateDecisionStatus(
+/**
+ * Update a decision with new values.
+ * This is used for explicit state changes (approve/reject/escalate).
+ */
+export async function updateDecision(
   decisionId: string, 
-  status: Decision["status"]
+  data: Partial<Pick<Decision, "status" | "decidedAt" | "decidedBy" | "justification" | "executionRef">>
 ): Promise<void> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
   await db.update(decisions)
-    .set({ status })
+    .set(data)
     .where(eq(decisions.decisionId, decisionId));
+}
+
+// Legacy function for backward compatibility
+export async function updateDecisionStatus(
+  decisionId: string, 
+  status: Decision["status"]
+): Promise<void> {
+  await updateDecision(decisionId, { status });
 }
 
 // ============================================
@@ -231,12 +243,13 @@ export async function createEvidencePack(
   const year = new Date().getFullYear();
   const evidenceId = `EVD-${year}-${nanoid(6).toUpperCase()}`;
   
-  // Generate a merkle hash from the evidence data
+  // Generate a SHA-256 hash from the evidence data
   const hashInput = JSON.stringify({
     decisionId: data.decisionId,
     actorId: data.actorId,
     action: data.action,
     justification: data.justification,
+    policySnapshot: data.policySnapshot,
     timestamp: new Date().toISOString(),
   });
   const merkleHash = `0x${crypto.createHash("sha256").update(hashInput).digest("hex")}`;
@@ -265,8 +278,8 @@ export async function seedInitialData(): Promise<void> {
   if (existingPolicies.length === 0) {
     // Seed policies
     const seedPolicies: InsertPolicy[] = [
-      { code: "PAY-001", name: "Standard Payment Approval", description: "Payments under £10,000 to known beneficiaries", requiredAuthority: "SUPERVISOR", riskLevel: "LOW" },
-      { code: "PAY-004", name: "High Value Payment Approval", description: "Payments over £25,000 to any beneficiary", requiredAuthority: "SUPERVISOR", riskLevel: "MEDIUM" },
+      { code: "PAY-001", name: "Standard Payment Approval", description: "Payments under $10,000 AUD to known beneficiaries", requiredAuthority: "SUPERVISOR", riskLevel: "LOW" },
+      { code: "PAY-004", name: "High Value Payment Approval", description: "Payments over $25,000 AUD to any beneficiary", requiredAuthority: "SUPERVISOR", riskLevel: "MEDIUM" },
       { code: "LIM-001", name: "Daily Limit Override", description: "Override for daily outgoing transaction limits", requiredAuthority: "DUAL", riskLevel: "HIGH" },
       { code: "AML-009", name: "AML Exception Review", description: "High velocity transaction pattern review", requiredAuthority: "COMPLIANCE", riskLevel: "CRITICAL" },
     ];
@@ -286,13 +299,13 @@ export async function seedInitialData(): Promise<void> {
       {
         decisionId: "DEC-2024-001",
         type: "PAYMENT",
-        subject: "Payment Approval: £40,000 → External Beneficiary",
+        subject: "Payment Approval: $40,000 AUD → External Beneficiary",
         policyCode: "PAY-004",
         risk: "MEDIUM",
         requiredAuthority: "SUPERVISOR",
         status: "PENDING",
         slaDeadline: new Date(now.getTime() + 72 * 1000),
-        amount: "£40,000",
+        amount: "$40,000 AUD",
         beneficiary: "Acme Corp Ltd.",
         context: "Transaction flagged by rule PAY-004. Velocity check indicates 30% deviation from standard pattern. Beneficiary is a known entity but amount exceeds daily auto-approval limit.",
       },
@@ -305,7 +318,7 @@ export async function seedInitialData(): Promise<void> {
         requiredAuthority: "DUAL",
         status: "PENDING",
         slaDeadline: new Date(now.getTime() + 22 * 1000),
-        context: "Daily outgoing limit of £100,000 has been exceeded. Current total: £127,500. Override requested for additional £50,000 transfer.",
+        context: "Daily outgoing limit of $100,000 AUD has been exceeded. Current total: $127,500 AUD. Override requested for additional $50,000 AUD transfer.",
       },
       {
         decisionId: "DEC-2024-003",
@@ -316,7 +329,7 @@ export async function seedInitialData(): Promise<void> {
         requiredAuthority: "COMPLIANCE",
         status: "PENDING",
         slaDeadline: new Date(now.getTime() + 300 * 1000),
-        context: "Multiple rapid transactions detected within 15-minute window. Total volume: £85,000 across 12 transactions. Pattern matches known structuring behavior.",
+        context: "Multiple rapid transactions detected within 15-minute window. Total volume: $85,000 AUD across 12 transactions. Pattern matches known structuring behavior.",
       },
     ];
 

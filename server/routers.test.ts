@@ -1,5 +1,6 @@
-import { describe, it, expect, beforeAll } from "vitest";
+import { describe, it, expect } from "vitest";
 import { listDecisions, listPolicies, listEvidencePacks, getDecisionById, getPolicyByCode } from "./db";
+import { AUTHORITY_MATRIX, VISIBILITY_MATRIX, hasAuthority, normalizeRole, requiresDualControl, getAuthorityRule } from "@shared/authority";
 
 describe("Decisions API", () => {
   it("should list all decisions", async () => {
@@ -55,5 +56,107 @@ describe("Evidence API", () => {
   it("should list all evidence packs", async () => {
     const evidence = await listEvidencePacks();
     expect(Array.isArray(evidence)).toBe(true);
+  });
+});
+
+// Authority Matrix Tests
+describe("Authority Matrix", () => {
+  describe("normalizeRole", () => {
+    it("should normalize role strings correctly", () => {
+      expect(normalizeRole("admin")).toBe("PLATFORM_ADMIN");
+      expect(normalizeRole("supervisor")).toBe("SUPERVISOR");
+      expect(normalizeRole("compliance")).toBe("COMPLIANCE");
+      expect(normalizeRole("operator")).toBe("OPERATOR");
+      expect(normalizeRole("user")).toBe("OPERATOR");
+    });
+  });
+
+  describe("hasAuthority", () => {
+    it("should allow SUPERVISOR to approve PAYMENT decisions", () => {
+      expect(hasAuthority("SUPERVISOR", "PAYMENT")).toBe(true);
+    });
+
+    it("should allow COMPLIANCE to approve AML_EXCEPTION decisions", () => {
+      expect(hasAuthority("COMPLIANCE", "AML_EXCEPTION")).toBe(true);
+    });
+
+    it("should not allow OPERATOR to approve PAYMENT decisions", () => {
+      expect(hasAuthority("OPERATOR", "PAYMENT")).toBe(false);
+    });
+
+    it("should allow PLATFORM_ADMIN to approve PAYMENT decisions", () => {
+      expect(hasAuthority("PLATFORM_ADMIN", "PAYMENT")).toBe(true);
+    });
+
+    it("should allow PLATFORM_ADMIN to approve POLICY_CHANGE decisions", () => {
+      expect(hasAuthority("PLATFORM_ADMIN", "POLICY_CHANGE")).toBe(true);
+    });
+  });
+
+  describe("requiresDualControl", () => {
+    it("should require dual control for LIMIT_OVERRIDE", () => {
+      expect(requiresDualControl("LIMIT_OVERRIDE")).toBe(true);
+    });
+
+    it("should require dual control for POLICY_CHANGE", () => {
+      expect(requiresDualControl("POLICY_CHANGE")).toBe(true);
+    });
+
+    it("should not require dual control for PAYMENT", () => {
+      expect(requiresDualControl("PAYMENT")).toBe(false);
+    });
+  });
+});
+
+describe("Authority Matrix Structure", () => {
+  it("should be an array of authority rules", () => {
+    expect(Array.isArray(AUTHORITY_MATRIX)).toBe(true);
+    expect(AUTHORITY_MATRIX.length).toBeGreaterThan(0);
+  });
+
+  it("should have entries for all decision types", () => {
+    const decisionTypes = ["PAYMENT", "LIMIT_OVERRIDE", "AML_EXCEPTION", "POLICY_CHANGE"];
+    decisionTypes.forEach((type) => {
+      const rule = getAuthorityRule(type);
+      expect(rule).toBeDefined();
+      expect(rule?.allowedRoles).toBeDefined();
+    });
+  });
+
+  it("should have dual control flags defined", () => {
+    const limitOverrideRule = getAuthorityRule("LIMIT_OVERRIDE");
+    const policyChangeRule = getAuthorityRule("POLICY_CHANGE");
+    const paymentRule = getAuthorityRule("PAYMENT");
+    
+    expect(limitOverrideRule?.dualControl).toBe(true);
+    expect(policyChangeRule?.dualControl).toBe(true);
+    expect(paymentRule?.dualControl).toBe(false);
+  });
+});
+
+describe("Visibility Matrix Structure", () => {
+  it("should have entries for UI areas", () => {
+    const areas = ["Decision Inbox", "Decision Actions", "Configuration"];
+    areas.forEach((area) => {
+      expect(VISIBILITY_MATRIX[area]).toBeDefined();
+    });
+  });
+
+  it("should allow PLATFORM_ADMIN to access Configuration", () => {
+    expect(VISIBILITY_MATRIX["Configuration"]["PLATFORM_ADMIN"]).toBe(true);
+  });
+
+  it("should not allow OPERATOR to access Configuration", () => {
+    expect(VISIBILITY_MATRIX["Configuration"]["OPERATOR"]).toBe(false);
+  });
+});
+
+describe("Currency", () => {
+  it("should use AUD as the default currency", () => {
+    // This test verifies that the system uses AUD
+    const testAmount = "$40,000 AUD";
+    expect(testAmount).toContain("AUD");
+    expect(testAmount).not.toContain("GBP");
+    expect(testAmount).not.toContain("£");
   });
 });

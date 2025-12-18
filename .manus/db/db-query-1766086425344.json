@@ -1,0 +1,9 @@
+{
+  "query": "UPDATE decisions SET amount = '$40,000 AUD', subject = 'Payment Approval: $40,000 AUD → External Beneficiary', context = 'Transaction flagged by rule PAY-004. Velocity check indicates 30% deviation from standard pattern. Beneficiary is a known entity but amount exceeds daily auto-approval limit.' WHERE decisionId = 'DEC-2024-001';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user zFXp9RNvPn4ZSGY.f4c672cde8f4 --database AKEywqHrvuBg7Sz2tPDLPz --execute UPDATE decisions SET amount = '$40,000 AUD', subject = 'Payment Approval: $40,000 AUD → External Beneficiary', context = 'Transaction flagged by rule PAY-004. Velocity check indicates 30% deviation from standard pattern. Beneficiary is a known entity but amount exceeds daily auto-approval limit.' WHERE decisionId = 'DEC-2024-001';",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 1627
+}

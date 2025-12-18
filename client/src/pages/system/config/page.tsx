@@ -9,12 +9,14 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Settings, Shield, Lock, Plus, Edit2, Loader2, AlertTriangle } from "lucide-react";
+import { Settings, Shield, Lock, Plus, Edit2, Loader2, AlertTriangle, CheckCircle2, XCircle, Users } from "lucide-react";
 import { toast } from "sonner";
 
 export default function ConfigPage() {
   const { user, isAuthenticated } = useAuth();
-  const { data: policies, isLoading } = trpc.policies.list.useQuery();
+  const { data: policies, isLoading: policiesLoading } = trpc.policies.list.useQuery();
+  const { data: authorityMatrix } = trpc.authority.getMatrix.useQuery();
+  const { data: visibilityMatrix } = trpc.authority.getVisibility.useQuery();
   const utils = trpc.useUtils();
   
   const [editingPolicy, setEditingPolicy] = useState<string | null>(null);
@@ -65,7 +67,7 @@ export default function ConfigPage() {
     );
   }
 
-  if (isLoading) {
+  if (policiesLoading) {
     return (
       <div className="flex items-center justify-center h-[50vh]">
         <Loader2 className="h-8 w-8 animate-spin text-orange-500" />
@@ -107,8 +109,13 @@ export default function ConfigPage() {
             <Lock className="mr-2 h-4 w-4" />
             Authority Matrix
           </TabsTrigger>
+          <TabsTrigger value="visibility" className="data-[state=active]:bg-zinc-800">
+            <Users className="mr-2 h-4 w-4" />
+            Visibility
+          </TabsTrigger>
         </TabsList>
 
+        {/* POLICIES TAB */}
         <TabsContent value="policies" className="space-y-4">
           <div className="flex justify-between items-center">
             <h2 className="text-lg font-semibold text-white">Policy Definitions</h2>
@@ -180,62 +187,166 @@ export default function ConfigPage() {
           </div>
         </TabsContent>
 
+        {/* AUTHORITY MATRIX TAB */}
         <TabsContent value="authority" className="space-y-4">
-          <h2 className="text-lg font-semibold text-white">Authority Matrix</h2>
-          <p className="text-sm text-zinc-400">
-            Defines which roles can approve which authority levels.
-          </p>
+          <div>
+            <h2 className="text-lg font-semibold text-white">Authority Matrix</h2>
+            <p className="text-sm text-zinc-400 mt-1">
+              Defines which roles can approve which decision types. This is the backbone of trust.
+            </p>
+          </div>
           
           <Card className="bg-zinc-900/50 border-zinc-800 overflow-hidden">
             <table className="w-full">
               <thead className="bg-zinc-800/50">
                 <tr>
-                  <th className="px-4 py-3 text-left text-xs font-bold text-zinc-400 uppercase tracking-wider">Role</th>
+                  <th className="px-4 py-3 text-left text-xs font-bold text-zinc-400 uppercase tracking-wider">Decision Type</th>
+                  <th className="px-4 py-3 text-center text-xs font-bold text-zinc-400 uppercase tracking-wider">OPERATOR</th>
                   <th className="px-4 py-3 text-center text-xs font-bold text-zinc-400 uppercase tracking-wider">SUPERVISOR</th>
                   <th className="px-4 py-3 text-center text-xs font-bold text-zinc-400 uppercase tracking-wider">COMPLIANCE</th>
-                  <th className="px-4 py-3 text-center text-xs font-bold text-zinc-400 uppercase tracking-wider">DUAL</th>
+                  <th className="px-4 py-3 text-center text-xs font-bold text-zinc-400 uppercase tracking-wider">PLATFORM_ADMIN</th>
+                  <th className="px-4 py-3 text-center text-xs font-bold text-zinc-400 uppercase tracking-wider">Dual Control</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-800">
-                <tr>
-                  <td className="px-4 py-3 font-mono text-white">admin</td>
-                  <td className="px-4 py-3 text-center text-emerald-400">✓</td>
-                  <td className="px-4 py-3 text-center text-emerald-400">✓</td>
-                  <td className="px-4 py-3 text-center text-emerald-400">✓</td>
-                </tr>
-                <tr>
-                  <td className="px-4 py-3 font-mono text-white">supervisor</td>
-                  <td className="px-4 py-3 text-center text-emerald-400">✓</td>
-                  <td className="px-4 py-3 text-center text-zinc-600">—</td>
-                  <td className="px-4 py-3 text-center text-amber-400">½</td>
-                </tr>
-                <tr>
-                  <td className="px-4 py-3 font-mono text-white">compliance</td>
-                  <td className="px-4 py-3 text-center text-zinc-600">—</td>
-                  <td className="px-4 py-3 text-center text-emerald-400">✓</td>
-                  <td className="px-4 py-3 text-center text-amber-400">½</td>
-                </tr>
-                <tr>
-                  <td className="px-4 py-3 font-mono text-white">operator</td>
-                  <td className="px-4 py-3 text-center text-zinc-600">—</td>
-                  <td className="px-4 py-3 text-center text-zinc-600">—</td>
-                  <td className="px-4 py-3 text-center text-zinc-600">—</td>
-                </tr>
-                <tr>
-                  <td className="px-4 py-3 font-mono text-white">user</td>
-                  <td className="px-4 py-3 text-center text-zinc-600">—</td>
-                  <td className="px-4 py-3 text-center text-zinc-600">—</td>
-                  <td className="px-4 py-3 text-center text-zinc-600">—</td>
-                </tr>
+                {authorityMatrix?.map((rule) => (
+                  <tr key={rule.decisionType}>
+                    <td className="px-4 py-3 font-mono text-white font-medium">{rule.decisionType}</td>
+                    <td className="px-4 py-3 text-center">
+                      {rule.allowedRoles.includes("OPERATOR") ? (
+                        <CheckCircle2 className="h-4 w-4 text-emerald-400 mx-auto" />
+                      ) : (
+                        <XCircle className="h-4 w-4 text-zinc-600 mx-auto" />
+                      )}
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      {rule.allowedRoles.includes("SUPERVISOR") ? (
+                        <CheckCircle2 className="h-4 w-4 text-emerald-400 mx-auto" />
+                      ) : (
+                        <XCircle className="h-4 w-4 text-zinc-600 mx-auto" />
+                      )}
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      {rule.allowedRoles.includes("COMPLIANCE") ? (
+                        <CheckCircle2 className="h-4 w-4 text-emerald-400 mx-auto" />
+                      ) : (
+                        <XCircle className="h-4 w-4 text-zinc-600 mx-auto" />
+                      )}
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      {rule.allowedRoles.includes("PLATFORM_ADMIN") ? (
+                        <CheckCircle2 className="h-4 w-4 text-emerald-400 mx-auto" />
+                      ) : (
+                        <XCircle className="h-4 w-4 text-zinc-600 mx-auto" />
+                      )}
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      {rule.dualControl ? (
+                        <Badge className="bg-amber-900/50 text-amber-400 border-amber-800">Required</Badge>
+                      ) : (
+                        <span className="text-zinc-600">—</span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </Card>
+
+          <Card className="bg-zinc-900/50 border-zinc-800 p-4">
+            <h3 className="text-sm font-bold text-zinc-400 uppercase tracking-wider mb-3">Authority Rules</h3>
+            <div className="space-y-3">
+              {authorityMatrix?.map((rule) => (
+                <div key={rule.decisionType} className="flex items-start gap-4 p-3 bg-zinc-950/50 rounded border border-zinc-800">
+                  <div className="flex-1">
+                    <div className="font-mono text-white font-medium">{rule.decisionType}</div>
+                    <div className="text-xs text-zinc-400 mt-1">{rule.description}</div>
+                    <div className="flex gap-2 mt-2">
+                      {rule.allowedRoles.map((role) => (
+                        <Badge key={role} variant="outline" className="border-zinc-700 text-zinc-300 text-xs">
+                          {role}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                  {rule.escalationRoles && rule.escalationRoles.length > 0 && (
+                    <div className="text-right">
+                      <div className="text-xs text-zinc-500">Escalation Path</div>
+                      <div className="text-xs text-orange-400 font-mono mt-1">
+                        {rule.escalationRoles.join(" → ")}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </Card>
           
-          <div className="text-xs text-zinc-500 space-y-1">
-            <p>✓ = Full authority to approve</p>
-            <p>½ = Partial authority (requires second approval for DUAL)</p>
-            <p>— = No authority</p>
+          <div className="text-xs text-zinc-500 space-y-1 bg-zinc-900/30 p-4 rounded border border-zinc-800">
+            <p className="font-bold text-zinc-400 mb-2">Legend</p>
+            <p className="flex items-center gap-2"><CheckCircle2 className="h-3 w-3 text-emerald-400" /> Full authority to approve</p>
+            <p className="flex items-center gap-2"><XCircle className="h-3 w-3 text-zinc-600" /> No authority</p>
+            <p className="flex items-center gap-2"><Badge className="bg-amber-900/50 text-amber-400 border-amber-800 text-[10px]">Required</Badge> Dual control required (two approvers)</p>
           </div>
+        </TabsContent>
+
+        {/* VISIBILITY MATRIX TAB */}
+        <TabsContent value="visibility" className="space-y-4">
+          <div>
+            <h2 className="text-lg font-semibold text-white">Visibility Matrix</h2>
+            <p className="text-sm text-zinc-400 mt-1">
+              Defines what each role can see in the system. No hidden functionality.
+            </p>
+          </div>
+          
+          <Card className="bg-zinc-900/50 border-zinc-800 overflow-hidden">
+            <table className="w-full">
+              <thead className="bg-zinc-800/50">
+                <tr>
+                  <th className="px-4 py-3 text-left text-xs font-bold text-zinc-400 uppercase tracking-wider">UI Area</th>
+                  <th className="px-4 py-3 text-center text-xs font-bold text-zinc-400 uppercase tracking-wider">OPERATOR</th>
+                  <th className="px-4 py-3 text-center text-xs font-bold text-zinc-400 uppercase tracking-wider">SUPERVISOR</th>
+                  <th className="px-4 py-3 text-center text-xs font-bold text-zinc-400 uppercase tracking-wider">COMPLIANCE</th>
+                  <th className="px-4 py-3 text-center text-xs font-bold text-zinc-400 uppercase tracking-wider">PLATFORM_ADMIN</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-zinc-800">
+                {visibilityMatrix && Object.entries(visibilityMatrix).map(([area, roles]) => (
+                  <tr key={area}>
+                    <td className="px-4 py-3 text-white">{area}</td>
+                    <td className="px-4 py-3 text-center">
+                      {(roles as Record<string, boolean>)["OPERATOR"] ? (
+                        <CheckCircle2 className="h-4 w-4 text-emerald-400 mx-auto" />
+                      ) : (
+                        <XCircle className="h-4 w-4 text-zinc-600 mx-auto" />
+                      )}
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      {(roles as Record<string, boolean>)["SUPERVISOR"] ? (
+                        <CheckCircle2 className="h-4 w-4 text-emerald-400 mx-auto" />
+                      ) : (
+                        <XCircle className="h-4 w-4 text-zinc-600 mx-auto" />
+                      )}
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      {(roles as Record<string, boolean>)["COMPLIANCE"] ? (
+                        <CheckCircle2 className="h-4 w-4 text-emerald-400 mx-auto" />
+                      ) : (
+                        <XCircle className="h-4 w-4 text-zinc-600 mx-auto" />
+                      )}
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      {(roles as Record<string, boolean>)["PLATFORM_ADMIN"] ? (
+                        <CheckCircle2 className="h-4 w-4 text-emerald-400 mx-auto" />
+                      ) : (
+                        <XCircle className="h-4 w-4 text-zinc-600 mx-auto" />
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </Card>
         </TabsContent>
       </Tabs>
     </div>
@@ -253,40 +364,47 @@ function NewPolicyForm({ onSubmit, isLoading }: {
   const [requiredAuthority, setRequiredAuthority] = useState<"SUPERVISOR" | "COMPLIANCE" | "DUAL">("SUPERVISOR");
   const [riskLevel, setRiskLevel] = useState<"LOW" | "MEDIUM" | "HIGH" | "CRITICAL">("MEDIUM");
 
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onSubmit({ code, name, description: description || undefined, requiredAuthority, riskLevel });
+  };
+
   return (
-    <div className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-4">
       <div>
-        <label className="text-xs text-zinc-400 mb-1 block">Policy Code</label>
+        <label className="text-sm text-zinc-400">Policy Code</label>
         <Input 
+          value={code} 
+          onChange={(e) => setCode(e.target.value)} 
           placeholder="e.g., PAY-005"
-          value={code}
-          onChange={(e) => setCode(e.target.value.toUpperCase())}
-          className="bg-zinc-950 border-zinc-800"
+          className="bg-zinc-950 border-zinc-800 mt-1"
+          required
         />
       </div>
       <div>
-        <label className="text-xs text-zinc-400 mb-1 block">Name</label>
+        <label className="text-sm text-zinc-400">Policy Name</label>
         <Input 
-          placeholder="Policy name"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          className="bg-zinc-950 border-zinc-800"
+          value={name} 
+          onChange={(e) => setName(e.target.value)} 
+          placeholder="e.g., High Value Payment Approval"
+          className="bg-zinc-950 border-zinc-800 mt-1"
+          required
         />
       </div>
       <div>
-        <label className="text-xs text-zinc-400 mb-1 block">Description</label>
+        <label className="text-sm text-zinc-400">Description</label>
         <Textarea 
-          placeholder="Policy description"
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          className="bg-zinc-950 border-zinc-800"
+          value={description} 
+          onChange={(e) => setDescription(e.target.value)} 
+          placeholder="Describe when this policy applies..."
+          className="bg-zinc-950 border-zinc-800 mt-1"
         />
       </div>
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label className="text-xs text-zinc-400 mb-1 block">Required Authority</label>
+          <label className="text-sm text-zinc-400">Required Authority</label>
           <Select value={requiredAuthority} onValueChange={(v) => setRequiredAuthority(v as typeof requiredAuthority)}>
-            <SelectTrigger className="bg-zinc-950 border-zinc-800">
+            <SelectTrigger className="bg-zinc-950 border-zinc-800 mt-1">
               <SelectValue />
             </SelectTrigger>
             <SelectContent className="bg-zinc-900 border-zinc-800">
@@ -297,9 +415,9 @@ function NewPolicyForm({ onSubmit, isLoading }: {
           </Select>
         </div>
         <div>
-          <label className="text-xs text-zinc-400 mb-1 block">Risk Level</label>
+          <label className="text-sm text-zinc-400">Risk Level</label>
           <Select value={riskLevel} onValueChange={(v) => setRiskLevel(v as typeof riskLevel)}>
-            <SelectTrigger className="bg-zinc-950 border-zinc-800">
+            <SelectTrigger className="bg-zinc-950 border-zinc-800 mt-1">
               <SelectValue />
             </SelectTrigger>
             <SelectContent className="bg-zinc-900 border-zinc-800">
@@ -311,21 +429,17 @@ function NewPolicyForm({ onSubmit, isLoading }: {
           </Select>
         </div>
       </div>
-      <Button 
-        className="w-full bg-orange-600 hover:bg-orange-500"
-        onClick={() => onSubmit({ code, name, description, requiredAuthority, riskLevel })}
-        disabled={isLoading || !code || !name}
-      >
-        {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+      <Button type="submit" className="w-full bg-orange-600 hover:bg-orange-500" disabled={isLoading}>
+        {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Plus className="mr-2 h-4 w-4" />}
         Create Policy
       </Button>
-    </div>
+    </form>
   );
 }
 
 // Edit Policy Form Component
 function EditPolicyForm({ policy, onSubmit, isLoading }: { 
-  policy: { name: string; description: string | null; requiredAuthority: string; riskLevel: string; isActive: number };
+  policy: { code: string; name: string; description: string | null; requiredAuthority: string; riskLevel: string; isActive: number };
   onSubmit: (data: { name?: string; description?: string; requiredAuthority?: "SUPERVISOR" | "COMPLIANCE" | "DUAL"; riskLevel?: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL"; isActive?: number }) => void;
   isLoading: boolean;
 }) {
@@ -333,31 +447,43 @@ function EditPolicyForm({ policy, onSubmit, isLoading }: {
   const [description, setDescription] = useState(policy.description || "");
   const [requiredAuthority, setRequiredAuthority] = useState(policy.requiredAuthority);
   const [riskLevel, setRiskLevel] = useState(policy.riskLevel);
-  const [isActive, setIsActive] = useState(policy.isActive === 1);
+  const [isActive, setIsActive] = useState(policy.isActive);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onSubmit({ 
+      name, 
+      description: description || undefined, 
+      requiredAuthority: requiredAuthority as "SUPERVISOR" | "COMPLIANCE" | "DUAL", 
+      riskLevel: riskLevel as "LOW" | "MEDIUM" | "HIGH" | "CRITICAL",
+      isActive
+    });
+  };
 
   return (
-    <div className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-4">
       <div>
-        <label className="text-xs text-zinc-400 mb-1 block">Name</label>
+        <label className="text-sm text-zinc-400">Policy Name</label>
         <Input 
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          className="bg-zinc-950 border-zinc-800"
+          value={name} 
+          onChange={(e) => setName(e.target.value)} 
+          className="bg-zinc-950 border-zinc-800 mt-1"
+          required
         />
       </div>
       <div>
-        <label className="text-xs text-zinc-400 mb-1 block">Description</label>
+        <label className="text-sm text-zinc-400">Description</label>
         <Textarea 
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          className="bg-zinc-950 border-zinc-800"
+          value={description} 
+          onChange={(e) => setDescription(e.target.value)} 
+          className="bg-zinc-950 border-zinc-800 mt-1"
         />
       </div>
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label className="text-xs text-zinc-400 mb-1 block">Required Authority</label>
+          <label className="text-sm text-zinc-400">Required Authority</label>
           <Select value={requiredAuthority} onValueChange={setRequiredAuthority}>
-            <SelectTrigger className="bg-zinc-950 border-zinc-800">
+            <SelectTrigger className="bg-zinc-950 border-zinc-800 mt-1">
               <SelectValue />
             </SelectTrigger>
             <SelectContent className="bg-zinc-900 border-zinc-800">
@@ -368,9 +494,9 @@ function EditPolicyForm({ policy, onSubmit, isLoading }: {
           </Select>
         </div>
         <div>
-          <label className="text-xs text-zinc-400 mb-1 block">Risk Level</label>
+          <label className="text-sm text-zinc-400">Risk Level</label>
           <Select value={riskLevel} onValueChange={setRiskLevel}>
-            <SelectTrigger className="bg-zinc-950 border-zinc-800">
+            <SelectTrigger className="bg-zinc-950 border-zinc-800 mt-1">
               <SelectValue />
             </SelectTrigger>
             <SelectContent className="bg-zinc-900 border-zinc-800">
@@ -382,29 +508,22 @@ function EditPolicyForm({ policy, onSubmit, isLoading }: {
           </Select>
         </div>
       </div>
-      <div className="flex items-center gap-2">
-        <input 
-          type="checkbox" 
-          checked={isActive}
-          onChange={(e) => setIsActive(e.target.checked)}
-          className="rounded border-zinc-700"
-        />
-        <label className="text-sm text-zinc-300">Policy Active</label>
+      <div>
+        <label className="text-sm text-zinc-400">Status</label>
+        <Select value={String(isActive)} onValueChange={(v) => setIsActive(Number(v))}>
+          <SelectTrigger className="bg-zinc-950 border-zinc-800 mt-1">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent className="bg-zinc-900 border-zinc-800">
+            <SelectItem value="1">Active</SelectItem>
+            <SelectItem value="0">Inactive</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
-      <Button 
-        className="w-full bg-orange-600 hover:bg-orange-500"
-        onClick={() => onSubmit({ 
-          name, 
-          description, 
-          requiredAuthority: requiredAuthority as "SUPERVISOR" | "COMPLIANCE" | "DUAL", 
-          riskLevel: riskLevel as "LOW" | "MEDIUM" | "HIGH" | "CRITICAL",
-          isActive: isActive ? 1 : 0
-        })}
-        disabled={isLoading}
-      >
-        {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-        Save Changes
+      <Button type="submit" className="w-full bg-orange-600 hover:bg-orange-500" disabled={isLoading}>
+        {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Edit2 className="mr-2 h-4 w-4" />}
+        Update Policy
       </Button>
-    </div>
+    </form>
   );
 }

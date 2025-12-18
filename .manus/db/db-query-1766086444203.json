@@ -1,0 +1,9 @@
+{
+  "query": "UPDATE policies SET description = 'Payments under $10,000 AUD to known beneficiaries' WHERE code = 'PAY-001'; UPDATE policies SET description = 'Payments over $25,000 AUD to any beneficiary' WHERE code = 'PAY-004';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user zFXp9RNvPn4ZSGY.f4c672cde8f4 --database AKEywqHrvuBg7Sz2tPDLPz --execute UPDATE policies SET description = 'Payments under $10,000 AUD to known beneficiaries' WHERE code = 'PAY-001'; UPDATE policies SET description = 'Payments over $25,000 AUD to any beneficiary' WHERE code = 'PAY-004';",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 1852
+}
