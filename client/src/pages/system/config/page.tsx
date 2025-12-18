@@ -9,13 +9,28 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Settings, Shield, Lock, Plus, Edit2, Loader2, AlertTriangle, CheckCircle2, XCircle, Users } from "lucide-react";
+import { Settings, Shield, Lock, Plus, Edit2, Loader2, AlertTriangle, CheckCircle2, XCircle, Users, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
+import { Link } from "wouter";
+import type { Role } from "@shared/authority";
+
+// Policy type from database
+interface DbPolicy {
+  id: number;
+  code: string;
+  name: string;
+  description: string | null;
+  version: string;
+  requiredAuthority: string;
+  riskLevel: string;
+  isActive: number;
+  createdAt: Date;
+  updatedAt: Date;
+}
 
 export default function ConfigPage() {
   const { user, isAuthenticated } = useAuth();
   const { data: policies, isLoading: policiesLoading } = trpc.policies.list.useQuery();
-  const { data: authorityMatrix } = trpc.authority.getMatrix.useQuery();
   const { data: visibilityMatrix } = trpc.authority.getVisibility.useQuery();
   const utils = trpc.useUtils();
   
@@ -82,6 +97,8 @@ export default function ConfigPage() {
     CRITICAL: "bg-rose-900/50 text-rose-400",
   };
 
+  const roles: Role[] = ["OPERATOR", "SUPERVISOR", "COMPLIANCE", "PLATFORM_ADMIN"];
+
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
       <div className="flex items-center justify-between">
@@ -91,7 +108,7 @@ export default function ConfigPage() {
             System Configuration
           </h1>
           <p className="text-zinc-400 text-sm mt-1">
-            Manage policies, authority matrices, and system parameters.
+            Manage policies and view role visibility settings.
           </p>
         </div>
         <Badge variant="outline" className="border-emerald-700 text-emerald-400">
@@ -105,10 +122,6 @@ export default function ConfigPage() {
             <Shield className="mr-2 h-4 w-4" />
             Policies
           </TabsTrigger>
-          <TabsTrigger value="authority" className="data-[state=active]:bg-zinc-800">
-            <Lock className="mr-2 h-4 w-4" />
-            Authority Matrix
-          </TabsTrigger>
           <TabsTrigger value="visibility" className="data-[state=active]:bg-zinc-800">
             <Users className="mr-2 h-4 w-4" />
             Visibility
@@ -119,27 +132,36 @@ export default function ConfigPage() {
         <TabsContent value="policies" className="space-y-4">
           <div className="flex justify-between items-center">
             <h2 className="text-lg font-semibold text-white">Policy Definitions</h2>
-            <Dialog open={newPolicyOpen} onOpenChange={setNewPolicyOpen}>
-              <DialogTrigger asChild>
-                <Button size="sm" className="bg-orange-600 hover:bg-orange-500">
-                  <Plus className="mr-2 h-4 w-4" />
-                  New Policy
+            <div className="flex gap-2">
+              <Link href="/system/authority">
+                <Button variant="outline" size="sm" className="border-zinc-700 text-zinc-300 hover:bg-zinc-800">
+                  <Lock className="mr-2 h-4 w-4" />
+                  View Authority Matrix
+                  <ExternalLink className="ml-2 h-3 w-3" />
                 </Button>
-              </DialogTrigger>
-              <DialogContent className="bg-zinc-900 border-zinc-800">
-                <DialogHeader>
-                  <DialogTitle className="text-white">Create New Policy</DialogTitle>
-                </DialogHeader>
-                <NewPolicyForm 
-                  onSubmit={(data) => createPolicyMutation.mutate(data)}
-                  isLoading={createPolicyMutation.isPending}
-                />
-              </DialogContent>
-            </Dialog>
+              </Link>
+              <Dialog open={newPolicyOpen} onOpenChange={setNewPolicyOpen}>
+                <DialogTrigger asChild>
+                  <Button size="sm" className="bg-orange-600 hover:bg-orange-500">
+                    <Plus className="mr-2 h-4 w-4" />
+                    New Policy
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="bg-zinc-900 border-zinc-800">
+                  <DialogHeader>
+                    <DialogTitle className="text-white">Create New Policy</DialogTitle>
+                  </DialogHeader>
+                  <NewPolicyForm 
+                    onSubmit={(data) => createPolicyMutation.mutate(data)}
+                    isLoading={createPolicyMutation.isPending}
+                  />
+                </DialogContent>
+              </Dialog>
+            </div>
           </div>
 
           <div className="space-y-3">
-            {policies?.map((policy) => (
+            {policies?.map((policy: DbPolicy) => (
               <Card key={policy.id} className="bg-zinc-900/50 border-zinc-800 p-5">
                 <div className="flex items-start justify-between">
                   <div className="space-y-2">
@@ -187,115 +209,12 @@ export default function ConfigPage() {
           </div>
         </TabsContent>
 
-        {/* AUTHORITY MATRIX TAB */}
-        <TabsContent value="authority" className="space-y-4">
-          <div>
-            <h2 className="text-lg font-semibold text-white">Authority Matrix</h2>
-            <p className="text-sm text-zinc-400 mt-1">
-              Defines which roles can approve which decision types. This is the backbone of trust.
-            </p>
-          </div>
-          
-          <Card className="bg-zinc-900/50 border-zinc-800 overflow-hidden">
-            <table className="w-full">
-              <thead className="bg-zinc-800/50">
-                <tr>
-                  <th className="px-4 py-3 text-left text-xs font-bold text-zinc-400 uppercase tracking-wider">Decision Type</th>
-                  <th className="px-4 py-3 text-center text-xs font-bold text-zinc-400 uppercase tracking-wider">OPERATOR</th>
-                  <th className="px-4 py-3 text-center text-xs font-bold text-zinc-400 uppercase tracking-wider">SUPERVISOR</th>
-                  <th className="px-4 py-3 text-center text-xs font-bold text-zinc-400 uppercase tracking-wider">COMPLIANCE</th>
-                  <th className="px-4 py-3 text-center text-xs font-bold text-zinc-400 uppercase tracking-wider">PLATFORM_ADMIN</th>
-                  <th className="px-4 py-3 text-center text-xs font-bold text-zinc-400 uppercase tracking-wider">Dual Control</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-zinc-800">
-                {authorityMatrix?.map((rule) => (
-                  <tr key={rule.decisionType}>
-                    <td className="px-4 py-3 font-mono text-white font-medium">{rule.decisionType}</td>
-                    <td className="px-4 py-3 text-center">
-                      {rule.allowedRoles.includes("OPERATOR") ? (
-                        <CheckCircle2 className="h-4 w-4 text-emerald-400 mx-auto" />
-                      ) : (
-                        <XCircle className="h-4 w-4 text-zinc-600 mx-auto" />
-                      )}
-                    </td>
-                    <td className="px-4 py-3 text-center">
-                      {rule.allowedRoles.includes("SUPERVISOR") ? (
-                        <CheckCircle2 className="h-4 w-4 text-emerald-400 mx-auto" />
-                      ) : (
-                        <XCircle className="h-4 w-4 text-zinc-600 mx-auto" />
-                      )}
-                    </td>
-                    <td className="px-4 py-3 text-center">
-                      {rule.allowedRoles.includes("COMPLIANCE") ? (
-                        <CheckCircle2 className="h-4 w-4 text-emerald-400 mx-auto" />
-                      ) : (
-                        <XCircle className="h-4 w-4 text-zinc-600 mx-auto" />
-                      )}
-                    </td>
-                    <td className="px-4 py-3 text-center">
-                      {rule.allowedRoles.includes("PLATFORM_ADMIN") ? (
-                        <CheckCircle2 className="h-4 w-4 text-emerald-400 mx-auto" />
-                      ) : (
-                        <XCircle className="h-4 w-4 text-zinc-600 mx-auto" />
-                      )}
-                    </td>
-                    <td className="px-4 py-3 text-center">
-                      {rule.dualControl ? (
-                        <Badge className="bg-amber-900/50 text-amber-400 border-amber-800">Required</Badge>
-                      ) : (
-                        <span className="text-zinc-600">—</span>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </Card>
-
-          <Card className="bg-zinc-900/50 border-zinc-800 p-4">
-            <h3 className="text-sm font-bold text-zinc-400 uppercase tracking-wider mb-3">Authority Rules</h3>
-            <div className="space-y-3">
-              {authorityMatrix?.map((rule) => (
-                <div key={rule.decisionType} className="flex items-start gap-4 p-3 bg-zinc-950/50 rounded border border-zinc-800">
-                  <div className="flex-1">
-                    <div className="font-mono text-white font-medium">{rule.decisionType}</div>
-                    <div className="text-xs text-zinc-400 mt-1">{rule.description}</div>
-                    <div className="flex gap-2 mt-2">
-                      {rule.allowedRoles.map((role) => (
-                        <Badge key={role} variant="outline" className="border-zinc-700 text-zinc-300 text-xs">
-                          {role}
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-                  {rule.escalationRoles && rule.escalationRoles.length > 0 && (
-                    <div className="text-right">
-                      <div className="text-xs text-zinc-500">Escalation Path</div>
-                      <div className="text-xs text-orange-400 font-mono mt-1">
-                        {rule.escalationRoles.join(" → ")}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          </Card>
-          
-          <div className="text-xs text-zinc-500 space-y-1 bg-zinc-900/30 p-4 rounded border border-zinc-800">
-            <p className="font-bold text-zinc-400 mb-2">Legend</p>
-            <p className="flex items-center gap-2"><CheckCircle2 className="h-3 w-3 text-emerald-400" /> Full authority to approve</p>
-            <p className="flex items-center gap-2"><XCircle className="h-3 w-3 text-zinc-600" /> No authority</p>
-            <p className="flex items-center gap-2"><Badge className="bg-amber-900/50 text-amber-400 border-amber-800 text-[10px]">Required</Badge> Dual control required (two approvers)</p>
-          </div>
-        </TabsContent>
-
-        {/* VISIBILITY MATRIX TAB */}
+        {/* VISIBILITY TAB */}
         <TabsContent value="visibility" className="space-y-4">
           <div>
-            <h2 className="text-lg font-semibold text-white">Visibility Matrix</h2>
+            <h2 className="text-lg font-semibold text-white">Role Visibility Matrix</h2>
             <p className="text-sm text-zinc-400 mt-1">
-              Defines what each role can see in the system. No hidden functionality.
+              Defines which UI areas each role can access. No hidden functionality.
             </p>
           </div>
           
@@ -304,44 +223,26 @@ export default function ConfigPage() {
               <thead className="bg-zinc-800/50">
                 <tr>
                   <th className="px-4 py-3 text-left text-xs font-bold text-zinc-400 uppercase tracking-wider">UI Area</th>
-                  <th className="px-4 py-3 text-center text-xs font-bold text-zinc-400 uppercase tracking-wider">OPERATOR</th>
-                  <th className="px-4 py-3 text-center text-xs font-bold text-zinc-400 uppercase tracking-wider">SUPERVISOR</th>
-                  <th className="px-4 py-3 text-center text-xs font-bold text-zinc-400 uppercase tracking-wider">COMPLIANCE</th>
-                  <th className="px-4 py-3 text-center text-xs font-bold text-zinc-400 uppercase tracking-wider">PLATFORM_ADMIN</th>
+                  {roles.map((role) => (
+                    <th key={role} className="px-4 py-3 text-center text-xs font-bold text-zinc-400 uppercase tracking-wider">
+                      {role}
+                    </th>
+                  ))}
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-800">
-                {visibilityMatrix && Object.entries(visibilityMatrix).map(([area, roles]) => (
+                {visibilityMatrix && Object.entries(visibilityMatrix).map(([area, roleAccess]) => (
                   <tr key={area}>
-                    <td className="px-4 py-3 text-white">{area}</td>
-                    <td className="px-4 py-3 text-center">
-                      {(roles as Record<string, boolean>)["OPERATOR"] ? (
-                        <CheckCircle2 className="h-4 w-4 text-emerald-400 mx-auto" />
-                      ) : (
-                        <XCircle className="h-4 w-4 text-zinc-600 mx-auto" />
-                      )}
-                    </td>
-                    <td className="px-4 py-3 text-center">
-                      {(roles as Record<string, boolean>)["SUPERVISOR"] ? (
-                        <CheckCircle2 className="h-4 w-4 text-emerald-400 mx-auto" />
-                      ) : (
-                        <XCircle className="h-4 w-4 text-zinc-600 mx-auto" />
-                      )}
-                    </td>
-                    <td className="px-4 py-3 text-center">
-                      {(roles as Record<string, boolean>)["COMPLIANCE"] ? (
-                        <CheckCircle2 className="h-4 w-4 text-emerald-400 mx-auto" />
-                      ) : (
-                        <XCircle className="h-4 w-4 text-zinc-600 mx-auto" />
-                      )}
-                    </td>
-                    <td className="px-4 py-3 text-center">
-                      {(roles as Record<string, boolean>)["PLATFORM_ADMIN"] ? (
-                        <CheckCircle2 className="h-4 w-4 text-emerald-400 mx-auto" />
-                      ) : (
-                        <XCircle className="h-4 w-4 text-zinc-600 mx-auto" />
-                      )}
-                    </td>
+                    <td className="px-4 py-3 font-medium text-white">{area}</td>
+                    {roles.map((role) => (
+                      <td key={role} className="px-4 py-3 text-center">
+                        {(roleAccess as Record<Role, boolean>)[role] ? (
+                          <CheckCircle2 className="h-4 w-4 text-emerald-400 mx-auto" />
+                        ) : (
+                          <XCircle className="h-4 w-4 text-zinc-600 mx-auto" />
+                        )}
+                      </td>
+                    ))}
                   </tr>
                 ))}
               </tbody>
@@ -354,7 +255,10 @@ export default function ConfigPage() {
 }
 
 // New Policy Form Component
-function NewPolicyForm({ onSubmit, isLoading }: { 
+function NewPolicyForm({ 
+  onSubmit, 
+  isLoading 
+}: { 
   onSubmit: (data: { code: string; name: string; description?: string; requiredAuthority: "SUPERVISOR" | "COMPLIANCE" | "DUAL"; riskLevel?: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL" }) => void;
   isLoading: boolean;
 }) {
@@ -366,71 +270,71 @@ function NewPolicyForm({ onSubmit, isLoading }: {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit({ code, name, description: description || undefined, requiredAuthority, riskLevel });
+    onSubmit({ code, name, description, requiredAuthority, riskLevel });
   };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
-        <label className="text-sm text-zinc-400">Policy Code</label>
+        <label className="text-sm font-medium text-zinc-300">Policy Code</label>
         <Input 
-          value={code} 
-          onChange={(e) => setCode(e.target.value)} 
+          value={code}
+          onChange={(e) => setCode(e.target.value.toUpperCase())}
           placeholder="e.g., PAY-005"
-          className="bg-zinc-950 border-zinc-800 mt-1"
+          className="bg-zinc-800 border-zinc-700 text-white mt-1"
           required
         />
       </div>
       <div>
-        <label className="text-sm text-zinc-400">Policy Name</label>
+        <label className="text-sm font-medium text-zinc-300">Name</label>
         <Input 
-          value={name} 
-          onChange={(e) => setName(e.target.value)} 
-          placeholder="e.g., High Value Payment Approval"
-          className="bg-zinc-950 border-zinc-800 mt-1"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="Policy name"
+          className="bg-zinc-800 border-zinc-700 text-white mt-1"
           required
         />
       </div>
       <div>
-        <label className="text-sm text-zinc-400">Description</label>
+        <label className="text-sm font-medium text-zinc-300">Description</label>
         <Textarea 
-          value={description} 
-          onChange={(e) => setDescription(e.target.value)} 
-          placeholder="Describe when this policy applies..."
-          className="bg-zinc-950 border-zinc-800 mt-1"
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          placeholder="Policy description"
+          className="bg-zinc-800 border-zinc-700 text-white mt-1"
         />
       </div>
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label className="text-sm text-zinc-400">Required Authority</label>
-          <Select value={requiredAuthority} onValueChange={(v) => setRequiredAuthority(v as typeof requiredAuthority)}>
-            <SelectTrigger className="bg-zinc-950 border-zinc-800 mt-1">
+          <label className="text-sm font-medium text-zinc-300">Required Authority</label>
+          <Select value={requiredAuthority} onValueChange={(v) => setRequiredAuthority(v as "SUPERVISOR" | "COMPLIANCE" | "DUAL")}>
+            <SelectTrigger className="bg-zinc-800 border-zinc-700 text-white mt-1">
               <SelectValue />
             </SelectTrigger>
-            <SelectContent className="bg-zinc-900 border-zinc-800">
-              <SelectItem value="SUPERVISOR">SUPERVISOR</SelectItem>
-              <SelectItem value="COMPLIANCE">COMPLIANCE</SelectItem>
-              <SelectItem value="DUAL">DUAL</SelectItem>
+            <SelectContent className="bg-zinc-800 border-zinc-700">
+              <SelectItem value="SUPERVISOR">Supervisor</SelectItem>
+              <SelectItem value="COMPLIANCE">Compliance</SelectItem>
+              <SelectItem value="DUAL">Dual Control</SelectItem>
             </SelectContent>
           </Select>
         </div>
         <div>
-          <label className="text-sm text-zinc-400">Risk Level</label>
-          <Select value={riskLevel} onValueChange={(v) => setRiskLevel(v as typeof riskLevel)}>
-            <SelectTrigger className="bg-zinc-950 border-zinc-800 mt-1">
+          <label className="text-sm font-medium text-zinc-300">Risk Level</label>
+          <Select value={riskLevel} onValueChange={(v) => setRiskLevel(v as "LOW" | "MEDIUM" | "HIGH" | "CRITICAL")}>
+            <SelectTrigger className="bg-zinc-800 border-zinc-700 text-white mt-1">
               <SelectValue />
             </SelectTrigger>
-            <SelectContent className="bg-zinc-900 border-zinc-800">
-              <SelectItem value="LOW">LOW</SelectItem>
-              <SelectItem value="MEDIUM">MEDIUM</SelectItem>
-              <SelectItem value="HIGH">HIGH</SelectItem>
-              <SelectItem value="CRITICAL">CRITICAL</SelectItem>
+            <SelectContent className="bg-zinc-800 border-zinc-700">
+              <SelectItem value="LOW">Low</SelectItem>
+              <SelectItem value="MEDIUM">Medium</SelectItem>
+              <SelectItem value="HIGH">High</SelectItem>
+              <SelectItem value="CRITICAL">Critical</SelectItem>
             </SelectContent>
           </Select>
         </div>
       </div>
       <Button type="submit" className="w-full bg-orange-600 hover:bg-orange-500" disabled={isLoading}>
-        {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Plus className="mr-2 h-4 w-4" />}
+        {isLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
         Create Policy
       </Button>
     </form>
@@ -438,90 +342,85 @@ function NewPolicyForm({ onSubmit, isLoading }: {
 }
 
 // Edit Policy Form Component
-function EditPolicyForm({ policy, onSubmit, isLoading }: { 
-  policy: { code: string; name: string; description: string | null; requiredAuthority: string; riskLevel: string; isActive: number };
+function EditPolicyForm({ 
+  policy,
+  onSubmit, 
+  isLoading 
+}: { 
+  policy: DbPolicy;
   onSubmit: (data: { name?: string; description?: string; requiredAuthority?: "SUPERVISOR" | "COMPLIANCE" | "DUAL"; riskLevel?: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL"; isActive?: number }) => void;
   isLoading: boolean;
 }) {
   const [name, setName] = useState(policy.name);
   const [description, setDescription] = useState(policy.description || "");
-  const [requiredAuthority, setRequiredAuthority] = useState(policy.requiredAuthority);
-  const [riskLevel, setRiskLevel] = useState(policy.riskLevel);
+  const [requiredAuthority, setRequiredAuthority] = useState<"SUPERVISOR" | "COMPLIANCE" | "DUAL">(policy.requiredAuthority as "SUPERVISOR" | "COMPLIANCE" | "DUAL");
+  const [riskLevel, setRiskLevel] = useState<"LOW" | "MEDIUM" | "HIGH" | "CRITICAL">(policy.riskLevel as "LOW" | "MEDIUM" | "HIGH" | "CRITICAL");
   const [isActive, setIsActive] = useState(policy.isActive);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit({ 
-      name, 
-      description: description || undefined, 
-      requiredAuthority: requiredAuthority as "SUPERVISOR" | "COMPLIANCE" | "DUAL", 
-      riskLevel: riskLevel as "LOW" | "MEDIUM" | "HIGH" | "CRITICAL",
-      isActive
-    });
+    onSubmit({ name, description, requiredAuthority, riskLevel, isActive });
   };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
-        <label className="text-sm text-zinc-400">Policy Name</label>
+        <label className="text-sm font-medium text-zinc-300">Name</label>
         <Input 
-          value={name} 
-          onChange={(e) => setName(e.target.value)} 
-          className="bg-zinc-950 border-zinc-800 mt-1"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          className="bg-zinc-800 border-zinc-700 text-white mt-1"
           required
         />
       </div>
       <div>
-        <label className="text-sm text-zinc-400">Description</label>
+        <label className="text-sm font-medium text-zinc-300">Description</label>
         <Textarea 
-          value={description} 
-          onChange={(e) => setDescription(e.target.value)} 
-          className="bg-zinc-950 border-zinc-800 mt-1"
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          className="bg-zinc-800 border-zinc-700 text-white mt-1"
         />
       </div>
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label className="text-sm text-zinc-400">Required Authority</label>
-          <Select value={requiredAuthority} onValueChange={setRequiredAuthority}>
-            <SelectTrigger className="bg-zinc-950 border-zinc-800 mt-1">
+          <label className="text-sm font-medium text-zinc-300">Required Authority</label>
+          <Select value={requiredAuthority} onValueChange={(v) => setRequiredAuthority(v as "SUPERVISOR" | "COMPLIANCE" | "DUAL")}>
+            <SelectTrigger className="bg-zinc-800 border-zinc-700 text-white mt-1">
               <SelectValue />
             </SelectTrigger>
-            <SelectContent className="bg-zinc-900 border-zinc-800">
-              <SelectItem value="SUPERVISOR">SUPERVISOR</SelectItem>
-              <SelectItem value="COMPLIANCE">COMPLIANCE</SelectItem>
-              <SelectItem value="DUAL">DUAL</SelectItem>
+            <SelectContent className="bg-zinc-800 border-zinc-700">
+              <SelectItem value="SUPERVISOR">Supervisor</SelectItem>
+              <SelectItem value="COMPLIANCE">Compliance</SelectItem>
+              <SelectItem value="DUAL">Dual Control</SelectItem>
             </SelectContent>
           </Select>
         </div>
         <div>
-          <label className="text-sm text-zinc-400">Risk Level</label>
-          <Select value={riskLevel} onValueChange={setRiskLevel}>
-            <SelectTrigger className="bg-zinc-950 border-zinc-800 mt-1">
+          <label className="text-sm font-medium text-zinc-300">Risk Level</label>
+          <Select value={riskLevel} onValueChange={(v) => setRiskLevel(v as "LOW" | "MEDIUM" | "HIGH" | "CRITICAL")}>
+            <SelectTrigger className="bg-zinc-800 border-zinc-700 text-white mt-1">
               <SelectValue />
             </SelectTrigger>
-            <SelectContent className="bg-zinc-900 border-zinc-800">
-              <SelectItem value="LOW">LOW</SelectItem>
-              <SelectItem value="MEDIUM">MEDIUM</SelectItem>
-              <SelectItem value="HIGH">HIGH</SelectItem>
-              <SelectItem value="CRITICAL">CRITICAL</SelectItem>
+            <SelectContent className="bg-zinc-800 border-zinc-700">
+              <SelectItem value="LOW">Low</SelectItem>
+              <SelectItem value="MEDIUM">Medium</SelectItem>
+              <SelectItem value="HIGH">High</SelectItem>
+              <SelectItem value="CRITICAL">Critical</SelectItem>
             </SelectContent>
           </Select>
         </div>
       </div>
-      <div>
-        <label className="text-sm text-zinc-400">Status</label>
-        <Select value={String(isActive)} onValueChange={(v) => setIsActive(Number(v))}>
-          <SelectTrigger className="bg-zinc-950 border-zinc-800 mt-1">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent className="bg-zinc-900 border-zinc-800">
-            <SelectItem value="1">Active</SelectItem>
-            <SelectItem value="0">Inactive</SelectItem>
-          </SelectContent>
-        </Select>
+      <div className="flex items-center gap-2">
+        <input 
+          type="checkbox" 
+          checked={isActive === 1}
+          onChange={(e) => setIsActive(e.target.checked ? 1 : 0)}
+          className="rounded border-zinc-700 bg-zinc-800"
+        />
+        <label className="text-sm text-zinc-300">Active</label>
       </div>
       <Button type="submit" className="w-full bg-orange-600 hover:bg-orange-500" disabled={isLoading}>
-        {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Edit2 className="mr-2 h-4 w-4" />}
+        {isLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
         Update Policy
       </Button>
     </form>

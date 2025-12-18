@@ -9,7 +9,7 @@ import {
   listEvidencePacks, getEvidencePackById, getEvidencePackByDecisionId, createEvidencePack,
   seedInitialData
 } from "./db";
-import { hasAuthority, normalizeRole, requiresDualControl, AUTHORITY_MATRIX, VISIBILITY_MATRIX } from "@shared/authority";
+import { hasAuthority, normalizeRole, requiresDualControl, AUTHORITY_MATRIX, VISIBILITY_MATRIX, getAuthorityMatrixResponse } from "@shared/authority";
 
 // Seed initial data on server start
 seedInitialData().catch(console.error);
@@ -287,14 +287,32 @@ export const appRouter = router({
   // Changes require a POLICY_CHANGE decision
   // ============================================
   authority: router({
-    getMatrix: publicProcedure.query(() => {
-      return AUTHORITY_MATRIX;
+    // GET /system/authority-matrix
+    // Returns the full authority matrix with version, hash, and rules
+    // This is the authoritative source for the UI
+    getMatrix: publicProcedure.query(async () => {
+      // Get the matrix response from the shared authority module
+      const matrixResponse = getAuthorityMatrixResponse();
+      
+      // Find the last POLICY_CHANGE decision that was approved
+      const policyChangeDecisions = await listDecisions();
+      const lastPolicyChange = policyChangeDecisions.find(
+        d => d.type === "POLICY_CHANGE" && d.status === "APPROVED"
+      );
+      
+      return {
+        ...matrixResponse,
+        lastChangeDecisionId: lastPolicyChange?.decisionId || null,
+        lastChangeDate: lastPolicyChange?.decidedAt || null,
+      };
     }),
 
+    // GET /authority/visibility
     getVisibility: publicProcedure.query(() => {
       return VISIBILITY_MATRIX;
     }),
 
+    // GET /authority/check
     checkAuthority: publicProcedure
       .input(z.object({
         role: z.string(),
@@ -305,6 +323,35 @@ export const appRouter = router({
           hasAuthority: hasAuthority(input.role, input.decisionType),
           requiresDualControl: requiresDualControl(input.decisionType),
         };
+      }),
+
+    // GET /authority/governance-history
+    // Returns the history of POLICY_CHANGE decisions
+    getGovernanceHistory: publicProcedure
+      .input(z.object({ limit: z.number().min(1).max(50).default(10) }).optional())
+      .query(async ({ input }) => {
+        const allDecisions = await listDecisions();
+        const policyChanges = allDecisions
+          .filter(d => d.type === "POLICY_CHANGE")
+          .slice(0, input?.limit || 10);
+        
+        // Get evidence packs for each decision
+        const history = await Promise.all(
+          policyChanges.map(async (decision) => {
+            const evidence = await getEvidencePackByDecisionId(decision.decisionId);
+            return {
+              decisionId: decision.decisionId,
+              status: decision.status,
+              subject: decision.subject,
+              approvedBy: decision.decidedBy,
+              approvedAt: decision.decidedAt,
+              evidenceHash: evidence?.merkleHash || null,
+              evidenceId: evidence?.evidenceId || null,
+            };
+          })
+        );
+        
+        return history;
       }),
   }),
 });

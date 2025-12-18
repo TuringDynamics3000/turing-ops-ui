@@ -160,3 +160,67 @@ describe("Currency", () => {
     expect(testAmount).not.toContain("£");
   });
 });
+
+// ============================================
+// AUTHORITY MATRIX ENFORCEMENT ALIGNMENT TESTS
+// ============================================
+import { getAuthorityMatrixResponse, getAuthorityMatrixHash } from "@shared/authority";
+
+describe("Authority Matrix Enforcement Alignment", () => {
+  it("getAuthorityMatrixResponse returns correct structure", () => {
+    const response = getAuthorityMatrixResponse();
+    
+    expect(response).toHaveProperty("version");
+    expect(response).toHaveProperty("effectiveFrom");
+    expect(response).toHaveProperty("hash");
+    expect(response).toHaveProperty("rules");
+    expect(Array.isArray(response.rules)).toBe(true);
+    expect(response.rules.length).toBe(4);
+  });
+
+  it("Authority hash is deterministic", () => {
+    const hash1 = getAuthorityMatrixHash();
+    const hash2 = getAuthorityMatrixHash();
+    
+    expect(hash1).toBe(hash2);
+    expect(typeof hash1).toBe("string");
+    expect(hash1.length).toBeGreaterThan(10);
+  });
+
+  it("hasAuthority uses same matrix as API response", () => {
+    const response = getAuthorityMatrixResponse();
+    
+    // Verify PAYMENT rules match
+    const paymentRule = response.rules.find(r => r.decisionType === "PAYMENT");
+    expect(hasAuthority("SUPERVISOR", "PAYMENT")).toBe(paymentRule?.allowedRoles.includes("SUPERVISOR"));
+    expect(hasAuthority("COMPLIANCE", "PAYMENT")).toBe(paymentRule?.allowedRoles.includes("COMPLIANCE"));
+    
+    // Verify AML_EXCEPTION rules match
+    const amlRule = response.rules.find(r => r.decisionType === "AML_EXCEPTION");
+    expect(hasAuthority("COMPLIANCE", "AML_EXCEPTION")).toBe(amlRule?.allowedRoles.includes("COMPLIANCE"));
+    expect(hasAuthority("SUPERVISOR", "AML_EXCEPTION")).toBe(amlRule?.allowedRoles.includes("SUPERVISOR"));
+  });
+
+  it("requiresDualControl uses same matrix as API response", () => {
+    const response = getAuthorityMatrixResponse();
+    
+    response.rules.forEach(rule => {
+      expect(requiresDualControl(rule.decisionType)).toBe(rule.dualControl);
+    });
+  });
+
+  it("All rules have required fields for regulator compliance", () => {
+    const response = getAuthorityMatrixResponse();
+    
+    response.rules.forEach(rule => {
+      expect(rule).toHaveProperty("decisionType");
+      expect(rule).toHaveProperty("allowedRoles");
+      expect(rule).toHaveProperty("dualControl");
+      expect(rule).toHaveProperty("escalationRoles");
+      expect(rule).toHaveProperty("description");
+      expect(rule).toHaveProperty("policyCode");
+      expect(Array.isArray(rule.allowedRoles)).toBe(true);
+      expect(Array.isArray(rule.escalationRoles)).toBe(true);
+    });
+  });
+});

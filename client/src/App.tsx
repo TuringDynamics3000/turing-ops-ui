@@ -15,6 +15,7 @@ import LedgerExplorerPage from "./pages/state/ledger/page";
 import RiskExplorerPage from "./pages/state/risk/page";
 import EvidencePage from "./pages/evidence/page";
 import ConfigPage from "./pages/system/config/page";
+import AuthorityMatrixPage from "./pages/system/authority/page";
 import SearchPage from "./pages/search/page";
 import BoardPackPage from "./pages/board-pack/page";
 
@@ -49,6 +50,7 @@ function Router() {
         
         {/* System Configuration */}
         <Route path="/system/config" component={ConfigPage} />
+        <Route path="/system/authority" component={AuthorityMatrixPage} />
         
         {/* Legacy routes - redirect to new structure */}
         <Route path="/decisions/active" component={() => <Redirect to="/inbox" />} />

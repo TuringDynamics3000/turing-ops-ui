@@ -34,3 +34,15 @@
 - [x] Implement Board Pack monthly PDF export (/board-pack)
 - [x] Add POST /decisions endpoint for decision creation
 - [x] Update navigation routes to match new information architecture
+
+
+## Authority Matrix Viewer Rebuild
+
+- [x] Create GET /system/authority-matrix API endpoint with version, hash, effectiveFrom
+- [x] Rebuild /system/config/authority page as read-only constitutional document
+- [x] Add Authority Header with version, effective date, hash (copyable), last change decision link
+- [x] Add Authority Matrix Table with role badges, dual control indicators, escalation paths
+- [x] Add Authority Governance History section showing POLICY_CHANGE decisions
+- [x] Add "Propose Authority Change" button linking to Decision creation flow
+- [x] Remove all edit affordances (no toggles, modals, save buttons)
+- [x] Verify enforcement alignment (runtime, API, UI all use same source)

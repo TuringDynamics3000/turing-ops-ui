@@ -3,6 +3,13 @@
  * 
  * This is the backbone of trust.
  * It must be explicit, inspectable, versioned, and governed.
+ * 
+ * IMPORTANT: This file is the SINGLE SOURCE OF TRUTH for authority rules.
+ * - Runtime enforcement uses this
+ * - Decision API validates against this
+ * - UI renders based on this
+ * 
+ * Any change to this matrix MUST go through a POLICY_CHANGE decision.
  */
 
 export type Role =
@@ -21,45 +28,112 @@ export interface AuthorityRule {
   decisionType: DecisionType;
   allowedRoles: Role[];
   dualControl: boolean;
-  escalationRoles?: Role[];
+  escalationRoles: Role[];
   description: string;
+  policyCode: string; // Reference to governing policy
 }
+
+/**
+ * Authority Matrix Metadata
+ * This metadata is included in Evidence Packs to prove which version
+ * of the matrix was in effect when a decision was made.
+ */
+export const AUTHORITY_MATRIX_VERSION = "2025-02-18";
+export const AUTHORITY_MATRIX_EFFECTIVE_FROM = "2025-02-18T00:00:00Z";
 
 /**
  * The canonical Authority Matrix.
  * Changes to this matrix must:
- * 1. Create a Decision
+ * 1. Create a POLICY_CHANGE Decision
  * 2. Require dual control
  * 3. Produce an Evidence Pack
+ * 4. Update the version and hash
  */
 export const AUTHORITY_MATRIX: AuthorityRule[] = [
   {
     decisionType: "PAYMENT",
     allowedRoles: ["SUPERVISOR", "PLATFORM_ADMIN"],
     dualControl: false,
-    description: "Standard and high-value payment approvals"
+    escalationRoles: [],
+    description: "Standard and high-value payment approvals",
+    policyCode: "PAY-004"
   },
   {
     decisionType: "LIMIT_OVERRIDE",
     allowedRoles: ["COMPLIANCE", "PLATFORM_ADMIN"],
     dualControl: true,
     escalationRoles: ["PLATFORM_ADMIN"],
-    description: "Daily/transaction limit overrides"
+    description: "Daily/transaction limit overrides",
+    policyCode: "LIM-002"
   },
   {
     decisionType: "AML_EXCEPTION",
     allowedRoles: ["COMPLIANCE"],
     dualControl: true,
     escalationRoles: ["PLATFORM_ADMIN"],
-    description: "AML flag exceptions and reviews"
+    description: "AML flag exceptions and reviews",
+    policyCode: "AML-007"
   },
   {
     decisionType: "POLICY_CHANGE",
     allowedRoles: ["PLATFORM_ADMIN"],
     dualControl: true,
-    description: "Policy and authority matrix modifications"
+    escalationRoles: [],
+    description: "Policy and authority matrix modifications",
+    policyCode: "GOV-001"
   }
 ];
+
+/**
+ * Generate a deterministic hash of the Authority Matrix.
+ * This hash is used in Evidence Packs to prove which version
+ * of the matrix was in effect when a decision was made.
+ * 
+ * Note: In production, this would use a proper cryptographic hash.
+ * For the frontend, we use a simple deterministic string hash.
+ */
+export function getAuthorityMatrixHash(): string {
+  const content = JSON.stringify({
+    version: AUTHORITY_MATRIX_VERSION,
+    rules: AUTHORITY_MATRIX.map(r => ({
+      decisionType: r.decisionType,
+      allowedRoles: r.allowedRoles.sort(),
+      dualControl: r.dualControl,
+      escalationRoles: r.escalationRoles.sort()
+    }))
+  });
+  
+  // Simple hash function for frontend (production would use SHA-256)
+  let hash = 0;
+  for (let i = 0; i < content.length; i++) {
+    const char = content.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash; // Convert to 32bit integer
+  }
+  return Math.abs(hash).toString(16).padStart(8, '0') + 
+         'ab' + 
+         Math.abs(hash >> 8).toString(16).padStart(6, '0');
+}
+
+/**
+ * Get the full Authority Matrix response for the API.
+ * This is the authoritative source for the UI.
+ */
+export interface AuthorityMatrixResponse {
+  version: string;
+  effectiveFrom: string;
+  hash: string;
+  rules: AuthorityRule[];
+}
+
+export function getAuthorityMatrixResponse(): AuthorityMatrixResponse {
+  return {
+    version: AUTHORITY_MATRIX_VERSION,
+    effectiveFrom: AUTHORITY_MATRIX_EFFECTIVE_FROM,
+    hash: getAuthorityMatrixHash(),
+    rules: AUTHORITY_MATRIX
+  };
+}
 
 /**
  * Runtime authority enforcement.
@@ -171,4 +245,30 @@ export function normalizeRole(role: string): Role {
     "PLATFORM_ADMIN": "PLATFORM_ADMIN"
   };
   return roleMap[role] || "OPERATOR";
+}
+
+/**
+ * Format role for display (human-readable).
+ */
+export function formatRole(role: Role): string {
+  const roleNames: Record<Role, string> = {
+    OPERATOR: "Operator",
+    SUPERVISOR: "Supervisor",
+    COMPLIANCE: "Compliance",
+    PLATFORM_ADMIN: "Admin"
+  };
+  return roleNames[role] || role;
+}
+
+/**
+ * Format decision type for display (human-readable).
+ */
+export function formatDecisionType(type: DecisionType): string {
+  const typeNames: Record<DecisionType, string> = {
+    PAYMENT: "Payment",
+    LIMIT_OVERRIDE: "Limit Override",
+    AML_EXCEPTION: "AML Exception",
+    POLICY_CHANGE: "Policy Change"
+  };
+  return typeNames[type] || type;
 }

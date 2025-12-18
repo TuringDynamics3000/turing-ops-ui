@@ -9,7 +9,8 @@ import {
   FileText, 
   Search,
   FileBarChart,
-  Settings 
+  Settings,
+  Shield
 } from "lucide-react";
 
 interface NavItemProps {
@@ -125,6 +126,12 @@ export function Sidebar() {
 
       {/* System */}
       <NavSection title="System">
+        <NavItem 
+          href="/system/authority" 
+          icon={Shield} 
+          label="Authority Matrix" 
+          active={location === "/system/authority"} 
+        />
         <NavItem 
           href="/system/config" 
           icon={Settings} 
