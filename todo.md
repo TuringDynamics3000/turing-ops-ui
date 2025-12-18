@@ -137,3 +137,12 @@
 - [x] Improve typography hierarchy and visual rhythm
 - [x] Add System Health panel with service status
 - [x] Implement smooth transitions between data updates
+
+
+## Real-Time Dashboard Features
+- [x] Implement auto-refresh every 30 seconds with refetchInterval
+- [x] Add smooth number transition animations on data updates (useAnimatedNumber hook)
+- [x] Add visual refresh indicator (timestamp + manual refresh button + auto-refresh badge)
+- [x] Add quick action buttons (Approve/Reject) to Top Risks list
+- [x] Implement inline decision actions with loading states
+- [x] Add success/error toast notifications for quick actions (using sonner)

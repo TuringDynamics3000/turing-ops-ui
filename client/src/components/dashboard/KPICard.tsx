@@ -15,32 +15,50 @@ interface KPICardProps {
   accentColor?: "emerald" | "orange" | "rose" | "blue" | "purple";
 }
 
-// Animated number counter hook
-function useAnimatedNumber(targetValue: number, duration: number = 1000) {
-  const [displayValue, setDisplayValue] = useState(0);
-  const startTime = useRef<number | null>(null);
-  const startValue = useRef(0);
+// Animated number counter hook with smooth transitions on data refresh
+export function useAnimatedNumber(targetValue: number, duration: number = 800) {
+  const [displayValue, setDisplayValue] = useState(targetValue);
+  const animationRef = useRef<number | null>(null);
+  const startTimeRef = useRef<number | null>(null);
+  const startValueRef = useRef(targetValue);
+  const previousTargetRef = useRef(targetValue);
 
   useEffect(() => {
-    startValue.current = displayValue;
-    startTime.current = null;
+    // Skip animation if target hasn't changed
+    if (previousTargetRef.current === targetValue) return;
+    
+    // Cancel any existing animation
+    if (animationRef.current) {
+      cancelAnimationFrame(animationRef.current);
+    }
+
+    startValueRef.current = displayValue;
+    startTimeRef.current = null;
+    previousTargetRef.current = targetValue;
 
     const animate = (timestamp: number) => {
-      if (!startTime.current) startTime.current = timestamp;
-      const progress = Math.min((timestamp - startTime.current) / duration, 1);
+      if (!startTimeRef.current) startTimeRef.current = timestamp;
+      const elapsed = timestamp - startTimeRef.current;
+      const progress = Math.min(elapsed / duration, 1);
       
-      // Easing function for smooth deceleration
+      // Easing function for smooth deceleration (ease-out cubic)
       const easeOut = 1 - Math.pow(1 - progress, 3);
-      const current = startValue.current + (targetValue - startValue.current) * easeOut;
+      const current = startValueRef.current + (targetValue - startValueRef.current) * easeOut;
       
       setDisplayValue(current);
       
       if (progress < 1) {
-        requestAnimationFrame(animate);
+        animationRef.current = requestAnimationFrame(animate);
       }
     };
 
-    requestAnimationFrame(animate);
+    animationRef.current = requestAnimationFrame(animate);
+
+    return () => {
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current);
+      }
+    };
   }, [targetValue, duration]);
 
   return displayValue;

@@ -1,13 +1,14 @@
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Explainer } from "@/components/ui/explainer";
 import { EXPLAINER_CONTENT } from "@/lib/explainer-content";
-import { KPICard } from "@/components/dashboard/KPICard";
+import { KPICard, useAnimatedNumber } from "@/components/dashboard/KPICard";
 import { Sparkline, generateTrendData } from "@/components/dashboard/Sparkline";
 import { StatusIndicator, StatusBadge, SystemHealth } from "@/components/dashboard/StatusIndicator";
 import { trpc } from "@/lib/trpc";
+import { toast } from "sonner";
 import { 
-  Activity, 
   TrendingUp, 
   Clock, 
   Shield, 
@@ -17,19 +18,94 @@ import {
   Server,
   Loader2,
   ArrowUpRight,
-  ArrowDownRight,
   Zap,
   Lock,
   Eye,
-  Database
+  Database,
+  Check,
+  X,
+  RefreshCw
 } from "lucide-react";
 import { Link } from "wouter";
-import { useMemo } from "react";
+import { useMemo, useState, useEffect, useCallback } from "react";
 import { cn } from "@/lib/utils";
 
+// Auto-refresh interval in milliseconds (30 seconds)
+const REFRESH_INTERVAL = 30000;
+
 export default function OverviewPage() {
-  const { data: decisions, isLoading: decisionsLoading } = trpc.decisions.list.useQuery();
-  const { data: evidence, isLoading: evidenceLoading } = trpc.evidence.list.useQuery();
+
+  const [lastRefresh, setLastRefresh] = useState(new Date());
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [actionInProgress, setActionInProgress] = useState<string | null>(null);
+
+  const { 
+    data: decisions, 
+    isLoading: decisionsLoading,
+    refetch: refetchDecisions 
+  } = trpc.decisions.list.useQuery(undefined, {
+    refetchInterval: REFRESH_INTERVAL,
+    refetchIntervalInBackground: false,
+  });
+  
+  const { 
+    data: evidence, 
+    isLoading: evidenceLoading,
+    refetch: refetchEvidence 
+  } = trpc.evidence.list.useQuery(undefined, {
+    refetchInterval: REFRESH_INTERVAL,
+    refetchIntervalInBackground: false,
+  });
+
+  // Decision mutations
+  const approveMutation = trpc.decisions.approve.useMutation({
+    onSuccess: () => {
+      refetchDecisions();
+      refetchEvidence();
+      toast.success("Decision Approved", {
+        description: "The decision has been approved and evidence pack generated.",
+      });
+    },
+    onError: (error) => {
+      toast.error("Action Failed", {
+        description: error.message,
+      });
+    },
+  });
+
+  const rejectMutation = trpc.decisions.reject.useMutation({
+    onSuccess: () => {
+      refetchDecisions();
+      refetchEvidence();
+      toast.success("Decision Rejected", {
+        description: "The decision has been rejected and recorded.",
+      });
+    },
+    onError: (error) => {
+      toast.error("Action Failed", {
+        description: error.message,
+      });
+    },
+  });
+
+  // Manual refresh handler
+  const handleManualRefresh = useCallback(async () => {
+    setIsRefreshing(true);
+    await Promise.all([refetchDecisions(), refetchEvidence()]);
+    setLastRefresh(new Date());
+    setIsRefreshing(false);
+    toast.success("Data Refreshed", {
+      description: "Dashboard metrics have been updated.",
+    });
+  }, [refetchDecisions, refetchEvidence]);
+
+  // Update last refresh time on auto-refresh
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setLastRefresh(new Date());
+    }, REFRESH_INTERVAL);
+    return () => clearInterval(interval);
+  }, []);
 
   const isLoading = decisionsLoading || evidenceLoading;
 
@@ -37,6 +113,11 @@ export default function OverviewPage() {
   const pendingDecisions = decisions?.filter(d => d.status === "PENDING") || [];
   const completedDecisions = decisions?.filter(d => ["APPROVED", "REJECTED", "ESCALATED"].includes(d.status)) || [];
   const escalatedDecisions = decisions?.filter(d => d.status === "ESCALATED") || [];
+
+  // Animated counts
+  const animatedPendingCount = useAnimatedNumber(pendingDecisions.length, 600);
+  const animatedCompletedCount = useAnimatedNumber(completedDecisions.length, 600);
+  const animatedEscalatedCount = useAnimatedNumber(escalatedDecisions.length, 600);
 
   // Risk breakdown
   const pendingByRisk = {
@@ -73,6 +154,35 @@ export default function OverviewPage() {
     { name: "Evidence Store", status: "healthy" as const, latency: "8ms" },
   ];
 
+  // Quick action handlers
+  const handleQuickApprove = async (decisionId: string, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setActionInProgress(decisionId);
+    try {
+      await approveMutation.mutateAsync({ 
+        decisionId, 
+        justification: "Quick approval from Executive Overview dashboard" 
+      });
+    } finally {
+      setActionInProgress(null);
+    }
+  };
+
+  const handleQuickReject = async (decisionId: string, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setActionInProgress(decisionId);
+    try {
+      await rejectMutation.mutateAsync({ 
+        decisionId, 
+        justification: "Quick rejection from Executive Overview dashboard" 
+      });
+    } finally {
+      setActionInProgress(null);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-[50vh]">
@@ -96,8 +206,19 @@ export default function OverviewPage() {
         </div>
         <div className="flex items-center gap-4">
           <StatusBadge status="healthy" label="All Systems Operational" />
-          <div className="text-xs text-zinc-500 font-mono">
-            Last updated: {new Date().toLocaleTimeString()}
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleManualRefresh}
+              disabled={isRefreshing}
+              className="text-zinc-400 hover:text-white"
+            >
+              <RefreshCw className={cn("h-4 w-4", isRefreshing && "animate-spin")} />
+            </Button>
+            <div className="text-xs text-zinc-500 font-mono">
+              {lastRefresh.toLocaleTimeString()}
+            </div>
           </div>
         </div>
       </div>
@@ -190,7 +311,7 @@ export default function OverviewPage() {
           <Explainer {...EXPLAINER_CONTENT.decisionsPending} side="bottom">
             <KPICard
               title="Decisions Pending"
-              value={pendingDecisions.length}
+              value={Math.round(animatedPendingCount)}
               subtitle={`${pendingByRisk.CRITICAL} critical, ${pendingByRisk.HIGH} high`}
               icon={<Clock className="h-5 w-5" />}
               highlight={pendingByRisk.CRITICAL > 0}
@@ -212,8 +333,8 @@ export default function OverviewPage() {
           <Explainer {...EXPLAINER_CONTENT.escalationRate} side="bottom">
             <KPICard
               title="Escalation Rate"
-              value={`${completedDecisions.length > 0 ? Math.round((escalatedDecisions.length / completedDecisions.length) * 100) : 0}%`}
-              subtitle={`${escalatedDecisions.length} escalated / ${completedDecisions.length} completed`}
+              value={`${completedDecisions.length > 0 ? Math.round((animatedEscalatedCount / animatedCompletedCount) * 100) : 0}%`}
+              subtitle={`${Math.round(animatedEscalatedCount)} escalated / ${Math.round(animatedCompletedCount)} completed`}
               icon={<ArrowUpRight className="h-5 w-5" />}
               accentColor="purple"
             />
@@ -413,17 +534,20 @@ export default function OverviewPage() {
         </div>
       </section>
 
-      {/* Top Risks */}
+      {/* Top Risks with Quick Actions */}
       <section>
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-sm font-bold uppercase tracking-wider text-zinc-500">
             Top Risks (Ageing)
           </h2>
-          <Link href="/decisions/inbox">
-            <Badge variant="outline" className="border-zinc-700 text-zinc-400 cursor-pointer hover:bg-zinc-800 transition-colors">
-              View All →
-            </Badge>
-          </Link>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-zinc-600">Quick actions enabled</span>
+            <Link href="/decisions/inbox">
+              <Badge variant="outline" className="border-zinc-700 text-zinc-400 cursor-pointer hover:bg-zinc-800 transition-colors">
+                View All →
+              </Badge>
+            </Link>
+          </div>
         </div>
         <Card className="bg-gradient-to-br from-zinc-900/80 to-zinc-900/40 border-zinc-800 overflow-hidden">
           {pendingDecisions.length > 0 ? (
@@ -435,34 +559,67 @@ export default function OverviewPage() {
                 })
                 .slice(0, 5)
                 .map((decision, index) => (
-                  <Link key={decision.decisionId} href={`/decisions/${decision.decisionId}`}>
-                    <div 
-                      className={cn(
-                        "p-4 hover:bg-zinc-800/50 cursor-pointer transition-all flex items-center justify-between",
-                        "animate-in fade-in slide-in-from-left-2",
-                      )}
-                      style={{ animationDelay: `${index * 100}ms` }}
-                    >
-                      <div className="flex items-center gap-4">
+                  <div 
+                    key={decision.decisionId}
+                    className={cn(
+                      "p-4 hover:bg-zinc-800/50 transition-all",
+                      "animate-in fade-in slide-in-from-left-2",
+                    )}
+                    style={{ animationDelay: `${index * 100}ms` }}
+                  >
+                    <div className="flex items-center justify-between">
+                      <Link href={`/decisions/${decision.decisionId}`} className="flex items-center gap-4 flex-1 cursor-pointer">
                         <Badge className={cn(
                           getRiskColor(decision.risk),
                           decision.risk === "CRITICAL" && "animate-pulse"
                         )}>
                           {decision.risk}
                         </Badge>
-                        <div>
-                          <p className="text-white font-medium">{decision.subject}</p>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-white font-medium truncate">{decision.subject}</p>
                           <p className="text-xs text-zinc-500 font-mono">{decision.decisionId}</p>
                         </div>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-sm text-zinc-400">
-                          {getAgeString(new Date(decision.createdAt))}
-                        </p>
-                        <p className="text-xs text-zinc-500">{decision.requiredAuthority}</p>
+                        <div className="text-right mr-4">
+                          <p className="text-sm text-zinc-400">
+                            {getAgeString(new Date(decision.createdAt))}
+                          </p>
+                          <p className="text-xs text-zinc-500">{decision.requiredAuthority}</p>
+                        </div>
+                      </Link>
+                      
+                      {/* Quick Action Buttons */}
+                      <div className="flex items-center gap-2 pl-4 border-l border-zinc-800">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={(e) => handleQuickApprove(decision.decisionId, e)}
+                          disabled={actionInProgress === decision.decisionId}
+                          className="h-8 w-8 p-0 text-emerald-500 hover:text-emerald-400 hover:bg-emerald-900/20"
+                          title="Quick Approve"
+                        >
+                          {actionInProgress === decision.decisionId ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Check className="h-4 w-4" />
+                          )}
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={(e) => handleQuickReject(decision.decisionId, e)}
+                          disabled={actionInProgress === decision.decisionId}
+                          className="h-8 w-8 p-0 text-rose-500 hover:text-rose-400 hover:bg-rose-900/20"
+                          title="Quick Reject"
+                        >
+                          {actionInProgress === decision.decisionId ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <X className="h-4 w-4" />
+                          )}
+                        </Button>
                       </div>
                     </div>
-                  </Link>
+                  </div>
                 ))}
             </div>
           ) : (
@@ -474,6 +631,14 @@ export default function OverviewPage() {
           )}
         </Card>
       </section>
+
+      {/* Auto-refresh indicator */}
+      <div className="fixed bottom-4 right-4 z-50">
+        <div className="flex items-center gap-2 px-3 py-2 bg-zinc-900/90 border border-zinc-800 rounded-full text-xs text-zinc-500">
+          <RefreshCw className={cn("h-3 w-3", isRefreshing && "animate-spin text-orange-500")} />
+          <span>Auto-refresh: 30s</span>
+        </div>
+      </div>
     </div>
   );
 }
