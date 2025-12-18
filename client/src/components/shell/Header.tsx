@@ -11,7 +11,7 @@ export function Header() {
       {/* Left: Identity */}
       <div className="flex items-center gap-4">
         <div className="flex items-center gap-2">
-          <img src="/images/shield-logo.png" alt="Shield" className="h-8 w-8" />
+          <img src="/images/turing-logo.png" alt="TuringDynamics" className="h-8 w-8" />
           <div>
             <div className="font-bold text-sm tracking-tight uppercase">TuringDynamics Core</div>
             <div className="text-[10px] text-muted-foreground tracking-widest uppercase">System Governance</div>
